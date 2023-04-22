@@ -1,18 +1,18 @@
 import React from "react";
-import "./App.css";
-import GameList from "./components/GameList";
-import OverlapFinder from "./components/OverlapFinder";
-import EventCreator from "./components/EventCreator";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Setup from './components/Setup';
+import GameChoosingPage from "./components/GameChoosingPage";
 
 function App() {
   return (
-    <div className="App" style={{ backgroundColor: "black", color: "white" }}>
-      <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", padding: "20px" }}>
-        <GameList />
-        <OverlapFinder />
-        <EventCreator />
+    <Router>
+      <div className="App" style={{ backgroundColor: "black", color: "white" }}>
+      <Routes>
+          <Route path="/" element={<Setup />} />
+          <Route path="/:uniqueCode" element={<GameChoosingPage />} />
+        </Routes>
       </div>
-    </div>
+    </Router>
   );
 }
 
