@@ -6,26 +6,33 @@ import GameSelectionWithPoints from './GameSelectionWithPoints';
 import CustomBarChart from './BarChart';
 
 const UserList = () => {
-  const { eventId } = useParams();
+  const { eventCode } = useParams();
   const [users, setUsers] = useState([]);
   const currentUserDisplayName = localStorage.getItem('displayName');
+  const currentEventId = localStorage.getItem('eventId');
   const [userPoints, setUserPoints] = useState({});
   const [games, setGames] = useState([]); 
 
   useEffect(() => {
-    const usersRef = collection(db, `events/${eventId}/users`);
-    const q = query(usersRef, orderBy('displayName'));
+    try{
+        const usersRef = collection(db, `events/${currentEventId}/users`);
+        const q = query(usersRef, orderBy('displayName'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedUsers = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUsers(fetchedUsers);
-    });
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedUsers = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        setUsers(fetchedUsers);
+        });
 
-    return () => unsubscribe();
-  }, [eventId]);
+        
+        return () => unsubscribe();
+    } catch (error) {
+        console.error("Error adding document: ", error);
+    }  
+
+  });
 
   // Fetch games data
   useEffect(() => {

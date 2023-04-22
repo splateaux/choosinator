@@ -8,8 +8,8 @@ function App() {
     <Router>
       <div className="App" style={{ backgroundColor: "black", color: "white" }}>
       <Routes>
-          <Route path="/" element={<Setup />} />
-          <Route path="/:uniqueCode" element={<GameChoosingPage />} />
+          <Route path="/" element={<Setup />} index />
+          <Route path="/:eventCode" element={<GameChoosingPage />} />
         </Routes>
       </div>
     </Router>
