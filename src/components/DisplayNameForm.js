@@ -28,7 +28,8 @@ const DisplayNameForm = ({ onDisplayNameSubmit }) => {
 
     await addDoc(collection(db, `events/${eventId}/users`), newUser);
     localStorage.setItem('displayName', displayName);
-
+    localStorage.setItem('userColor', userColor);
+    
     onDisplayNameSubmit(displayName);
   };
 

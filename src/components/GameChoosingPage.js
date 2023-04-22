@@ -25,9 +25,9 @@ const GameChoosingPage = () => {
       <h1>Game Choosing Page: {eventCode}</h1>
       {displayName ? (
         <>
-          <GameSelectionWithPoints />
+          {/* <GameSelectionWithPoints /> */}
           <UserList />
-          <BarChart />
+          {/* <BarChart /> */}
         </>
       ) : (
         <DisplayNameForm onDisplayNameSubmit={handleDisplayNameSubmit} />
