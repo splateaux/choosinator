@@ -1,0 +1,47 @@
+// src/components/GameSubmission.js
+
+import React, { useState } from "react";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
+
+const GameSubmission = ({ user, event, games }) => {
+  const [selectedGames, setSelectedGames] = useState([]);
+
+  const handleCheckboxChange = (e) => {
+    const gameName = e.target.value;
+    if (e.target.checked) {
+      setSelectedGames([...selectedGames, gameName]);
+    } else {
+      setSelectedGames(selectedGames.filter((game) => game !== gameName));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const eventId = event.id;
+    const userId = user.uid;
+    const submissionDoc = doc(db, "events", eventId, "submissions", userId);
+    await setDoc(submissionDoc, { games: selectedGames });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h3>Submit games for {event.name}</h3>
+      <div className="game-selection">
+        {games.map((game) => (
+          <label key={game.id}>
+            <input
+              type="checkbox"
+              value={game.name}
+              onChange={handleCheckboxChange}
+            />
+            {game.name}
+          </label>
+        ))}
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+
+export default GameSubmission;
