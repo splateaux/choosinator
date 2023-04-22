@@ -11,6 +11,7 @@
     "@testing-library/user-event": "^13.5.0",
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "faker": "5.5.3",
     "firebase": "^9.20.0",
     "nanoid": "^4.0.2",
     "randomcolor": "^0.6.2",

@@ -51,6 +51,7 @@ const CustomBarChart = ({ data, games, users }) => {
     })),
   };
 
+
   const options = {
     indexAxis: 'y',
     scales: {

@@ -26,9 +26,10 @@ const DisplayNameForm = ({ onDisplayNameSubmit }) => {
     const userColor = randomcolor();
     const newUser = { displayName, color: userColor };      
 
-    await addDoc(collection(db, `events/${eventId}/users`), newUser);
+    const docRef = await addDoc(collection(db, `events/${eventId}/users`), newUser);
     localStorage.setItem('displayName', displayName);
     localStorage.setItem('userColor', userColor);
+    localStorage.setItem('userId', docRef.id);
     
     onDisplayNameSubmit(displayName);
   };

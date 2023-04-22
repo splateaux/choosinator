@@ -9,6 +9,7 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
   const [remainingBalance, setRemainingBalance] = useState(maxPoints);
   const [errors, setErrors] = useState({});
   const currentUserColor = localStorage.getItem("userColor");
+  const currentUserId = localStorage.getItem('userId');
 
   useEffect(() => {
     const gamesRef = collection(db, 'games');
@@ -25,10 +26,11 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
     return () => unsubscribe();
   }, []);
 
-  const handlePointsChange = (gameId, value) => {
+  const handlePointsChange = (gameId, value, userId) => {
     const updatedPointData = {
       points: parseInt(value) || 0,
       color: currentUserColor,
+      userId: currentUserId,
     };
 
     const newPoints = {
