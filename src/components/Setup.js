@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { addDoc, doc, db, query, collection, onSnapshot, orderBy, updateDoc, deleteDoc } from '../firebase';
 import stringSimilarity from "string-similarity";
-import { db } from '../firebase';
 import { nanoid } from 'nanoid';
 
 const Setup = () => {

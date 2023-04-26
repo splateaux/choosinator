@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { collection, onSnapshot, query, orderBy, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { addDoc, doc, db, query, collection, onSnapshot, orderBy, updateDoc, deleteDoc } from '../firebase';
 import GameSelectionWithPoints from './GameSelectionWithPoints';
 import CustomBarChart from './BarChart';
 
@@ -19,20 +18,20 @@ const UserList = () => {
         const q = query(usersRef, orderBy('displayName'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedUsers = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        }));
-        setUsers(fetchedUsers);
+          const fetchedUsers = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+          }));
+          setUsers(fetchedUsers);
         });
 
         
         return () => unsubscribe();
     } catch (error) {
-        console.error("Error adding document: ", error);
+        console.error("Error getting event users: ", error);
     }  
 
-  });
+  }, []);
 
   // Fetch games data
   useEffect(() => {

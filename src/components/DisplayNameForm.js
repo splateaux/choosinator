@@ -1,5 +1,5 @@
 import React, { useState, useEffect  } from "react";
-import { collection, where, query, getDocs, addDoc } from 'firebase/firestore';
+import { addDoc, where, query, collection, onSnapshot, getDocs, updateDoc, deleteDoc } from '../firebase';
 import { db } from '../firebase';
 import randomcolor from 'randomcolor';
 import { useParams } from 'react-router-dom';
