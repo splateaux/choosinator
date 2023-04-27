@@ -27,6 +27,13 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
   }, []);
 
   const handlePointsChange = (gameId, value) => {
+
+    if (value < 0)
+    {
+      alert('Cheater!');
+      return;
+    }
+
     const updatedPointData = {
       points: parseInt(value) || 0,
       color: currentUserColor,
