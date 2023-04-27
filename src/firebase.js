@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import logger from './logger';
-import { collection, orderBy, deleteDoc, getDoc, getDocs, updateDoc, doc, addDoc, query, where, onSnapshot } from "firebase/firestore";
+import { collection, orderBy, deleteDoc, setDoc, getDoc, getDocs, updateDoc, doc, addDoc, query, where, onSnapshot } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCdQQ2LtnqZBIRLZY6FZManAiR1TnRgrjc",
@@ -21,9 +21,19 @@ async function getDocsLogged(q) {
   return await getDocs(q);
 }
 
+async function getDocLogged(q) {
+  logger.info(`getDoc: ${JSON.stringify(q)}`);
+  return await getDoc(q);
+}
+
 async function addDocLogged(collectionRef, data) {
   logger.info(`addDoc: collection=${collectionRef.path}, data=${JSON.stringify(data)}`);
   return await addDoc(collectionRef, data);
+}
+
+async function setDocLogged(collectionRef, data) {
+  logger.info(`setDoc: collection=${collectionRef.path}, data=${JSON.stringify(data)}`);
+  return await setDoc(collectionRef, data);
 }
 
 function onSnapshotLogged(q, callback) {
@@ -52,6 +62,8 @@ export {
   addDocLogged as addDoc,
   onSnapshotLogged as onSnapshot,
   getDocsLogged as getDocs,
+  getDocLogged as getDoc,
   updateDocLogged as updateDoc,
   deleteDocLogged as deleteDoc,
+  setDocLogged as setDoc
 };

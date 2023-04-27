@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, orderBy, addDoc, where, query, collection, onSnapshot, getDocs, updateDoc, deleteDoc } from '../firebase';
+import { db, orderBy, doc, query, collection, onSnapshot, getDoc, updateDoc, setDoc } from '../firebase';
 
 const GameSelectionWithPoints = ({ onPointsUpdate }) => {
   const [games, setGames] = useState([]);
@@ -9,6 +9,7 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
   const [errors, setErrors] = useState({});
   const currentUserColor = localStorage.getItem("userColor");
   const currentUserId = localStorage.getItem('userId');
+  const currentEventId = localStorage.getItem('eventId');
 
   useEffect(() => {
     const gamesRef = collection(db, 'games');
@@ -25,7 +26,7 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
     return () => unsubscribe();
   }, []);
 
-  const handlePointsChange = (gameId, value, userId) => {
+  const handlePointsChange = (gameId, value) => {
     const updatedPointData = {
       points: parseInt(value) || 0,
       color: currentUserColor,
@@ -57,6 +58,22 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
     if (onPointsUpdate) {
       onPointsUpdate(newPoints);
     }
+
+    const pointsRef = doc(db, `events/${currentEventId}/points/${currentUserId}`);
+    getDoc(pointsRef).then((docSnapshot) => {
+      if (docSnapshot.exists()) {
+        updateDoc(pointsRef, {
+          [`${gameId}.${currentUserId}`]: updatedPointData,
+        });
+      } else {
+        setDoc(pointsRef, {
+          [gameId]: {
+            [currentUserId]: updatedPointData,
+          },
+        });
+      }
+    });    
+
   };
 
   return (

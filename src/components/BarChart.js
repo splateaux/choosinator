@@ -24,18 +24,16 @@ const CustomBarChart = ({ data, games, users }) => {
   }, {});
 
   const dataSeries = games.map((game) => {
-    const gamePoints = Object.entries(data)
-      .filter(([gameId, pointData]) => gameId === game.id)
-      .map(([, pointData]) => pointData);
-
+    const gamePoints = data[game.id] || [];
+  
     const userPoints = users.map((user) => {
       const userPointData = gamePoints.find(
         (pointData) => pointData.userId === user.id
       );
-
+  
       return userPointData ? userPointData.points : 0;
     });
-
+  
     return {
       gameName: game.name,
       userPoints: userPoints,

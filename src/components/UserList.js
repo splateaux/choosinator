@@ -11,6 +11,7 @@ const UserList = () => {
   const currentEventId = localStorage.getItem('eventId');
   const [userPoints, setUserPoints] = useState({});
   const [games, setGames] = useState([]); 
+  const [allUserPoints, setAllUserPoints] = useState({});  
 
   useEffect(() => {
     try{
@@ -32,6 +33,28 @@ const UserList = () => {
     }  
 
   }, []);
+
+  useEffect(() => {
+    const pointsRef = collection(db, `events/${currentEventId}/points`);
+    const q = query(pointsRef);
+  
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedPoints = snapshot.docs.reduce((acc, doc) => {
+        const userId = doc.id;
+        const userPoints = doc.data();
+        Object.entries(userPoints).forEach(([gameId, gameData]) => {
+          if (!acc[gameId]) {
+            acc[gameId] = [];
+          }
+          acc[gameId].push({ userId, ...gameData[userId] });
+        });
+        return acc;
+      }, {});
+      setAllUserPoints(fetchedPoints);
+    });
+  
+    return () => unsubscribe();
+  }, [currentEventId]);
 
   // Fetch games data
   useEffect(() => {
@@ -72,7 +95,8 @@ const UserList = () => {
         ))}
       </ul>
       <GameSelectionWithPoints onPointsUpdate={setUserPoints} />
-      <CustomBarChart data={userPoints} games={games} users={users} />
+      <CustomBarChart data={allUserPoints} games={games} users={users} />
+      {/* <CustomBarChart data={userPoints} games={games} users={users} /> */}
       {/* <CustomBarChart data={userPoints} games={games}/> */}
     </div>
   );
