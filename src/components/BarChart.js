@@ -34,11 +34,16 @@ const CustomBarChart = ({ data, games, users }) => {
       return userPointData ? userPointData.points : 0;
     });
   
+    const totalPoints = userPoints.reduce((sum, points) => sum + points, 0);
+  
     return {
       gameName: game.name,
       userPoints: userPoints,
+      totalPoints: totalPoints,
     };
   });
+  
+  dataSeries.sort((a, b) => b.totalPoints - a.totalPoints);
 
   const chartData = {
     labels: dataSeries.map((item) => item.gameName),
