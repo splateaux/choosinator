@@ -22,7 +22,7 @@ const GameChoosingPage = () => {
 
   return (
     <div>
-      <h1>Game Choosing Page: {eventCode}</h1>
+      <h1>What are we playing tonight?</h1>
       {displayName ? (
         <>
           {/* <GameSelectionWithPoints /> */}

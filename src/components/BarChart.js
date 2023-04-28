@@ -78,7 +78,7 @@ const CustomBarChart = ({ data, games, users }) => {
 
   return (
     <div>
-      <h3>Games Points Distribution</h3>
+      {/* <h3>Games Points Distribution</h3> */}
       <Bar data={chartData} options={options} />
     </div>
   );

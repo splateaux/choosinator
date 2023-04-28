@@ -106,20 +106,42 @@ const Setup = () => {
       </div>
       <div>
         <h2>Games List:</h2>
-        {games.map((game) => (
-          <div key={game.id}>
-            {selectedGame === game.id ? (
-              <input
-                type="text"
-                defaultValue={game.name}
-                onBlur={(e) => handleUpdateGame(game.id, e.target.value)}
-              />
-            ) : (
-              <span onClick={() => setSelectedGame(game.id)}>{game.name}</span>
-            )}
-            <button onClick={() => handleDeleteGame(game.id)}>Delete</button>
-          </div>
-        ))}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+          }}
+        >
+          {games.map((game) => (
+            <div
+              key={game.id}
+              style={{
+                flexBasis: '30%',
+                marginBottom: '1rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  alignItems: 'center'
+                }}
+              >
+                <button onClick={() => handleDeleteGame(game.id)}>Delete</button>                
+                {selectedGame === game.id ? (
+                  <input
+                    type="text"
+                    defaultValue={game.name}
+                    onBlur={(e) => handleUpdateGame(game.id, e.target.value)}
+                  />
+                ) : (
+                  <span onClick={() => setSelectedGame(game.id)}>{game.name}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
       <div>
         <h2>Create Event:</h2>

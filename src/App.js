@@ -2,11 +2,13 @@ import React from "react";
 import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import Setup from './components/Setup';
 import GameChoosingPage from "./components/GameChoosingPage";
+import './globalStyles.css';
 
 function App() {
   return (
     <Router>
-      <div className="App" style={{ backgroundColor: "black", color: "white" }}>
+      {/* <div className="App" style={{ backgroundColor: "black", color: "white" }}> */}
+      <div className="App" >
         <Routes>
           <Route path="/" element={<Setup />} />
           <Route path="/:eventCode" element={<GameChoosingPage />} />

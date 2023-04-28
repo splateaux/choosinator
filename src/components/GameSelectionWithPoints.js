@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, orderBy, doc, query, collection, onSnapshot, getDoc, updateDoc, setDoc } from '../firebase';
+import styles from './GameSelectionWithPoints.module.css';
 
 const GameSelectionWithPoints = ({ onPointsUpdate }) => {
   const [games, setGames] = useState([]);
@@ -25,6 +26,24 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleClearAllPoints = () => {
+    setPoints({});
+    setRemainingBalance(maxPoints);
+    setErrors({});
+
+    const pointsRef = doc(db, `events/${currentEventId}/points/${currentUserId}`);
+    getDoc(pointsRef).then((docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const clearedPointsData = games.reduce((acc, game) => {
+          acc[game.id] = { [currentUserId]: { points: 0, color: currentUserColor, userId: currentUserId }};
+          return acc;
+        }, {});
+
+        updateDoc(pointsRef, clearedPointsData);
+      }
+    });
+  };  
 
   const handlePointsChange = (gameId, value) => {
 
@@ -83,22 +102,42 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
 
   };
 
+  const chunk = (arr, size) =>
+    arr.reduce((chunks, el, i) => {
+      if (i % size === 0) {
+        chunks.push([el]);
+      } else {
+        chunks[chunks.length - 1].push(el);
+      }
+      return chunks;
+    }, []);
+
+  const gamesInColumns = chunk(games, Math.ceil(games.length / 3));  
+
   return (
     <div>
-      <h2>Game Selection With Points</h2>
-      {games.map((game) => (
-        <div key={game.id}>
-          <span>{game.name}</span>
-          <input
-            type="number"
-            min="0"
-            max="{maxPoints}"
-            value={points[game.id]?.points || ''}
-            onChange={(e) => handlePointsChange(game.id, e.target.value)}
-          />
-        </div>
-      ))}
+      <h2>Spend your points wisely!</h2>
+      <div className={styles.gameList}>
+        {gamesInColumns.map((column, columnIndex) => (
+          <div key={`column-${columnIndex}`} className={styles.column}>
+            {column.map((game) => (
+              <div key={game.id} className={styles.gameListItem}>
+                <span>{game.name}</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="{maxPoints}"
+                  value={points[game.id]?.points || ''}
+                  onChange={(e) => handlePointsChange(game.id, e.target.value)}
+                  className={styles.pointsInput}
+                />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
       <div>Remaining balance: {remainingBalance}</div>
+      <button onClick={handleClearAllPoints}>Clear All Points</button>      
     </div>
   );
 };
