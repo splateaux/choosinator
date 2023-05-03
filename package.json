@@ -1,7 +1,6 @@
 {
   "name": "game-findinator",
   "version": "0.1.0",
-  "homepage": "https://splateaux.github.io/choosinator",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.10.6",
