@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, orderBy, doc, query, collection, onSnapshot, getDoc, updateDoc, setDoc } from '../firebase';
 import styles from './GameSelectionWithPoints.module.css';
 
-const GameSelectionWithPoints = ({ onPointsUpdate }) => {
+const GameSelectionWithPoints = () => {
   const [games, setGames] = useState([]);
   const [points, setPoints] = useState({});
   const maxPoints = 100;
@@ -80,10 +80,6 @@ const GameSelectionWithPoints = ({ onPointsUpdate }) => {
     setPoints(newPoints);
     setRemainingBalance(maxPoints - totalPoints);
     setErrors(newErrors);
-
-    if (onPointsUpdate) {
-      onPointsUpdate(newPoints);
-    }
 
     const pointsRef = doc(db, `events/${currentEventId}/points/${currentUserId}`);
     getDoc(pointsRef).then((docSnapshot) => {

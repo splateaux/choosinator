@@ -89,7 +89,6 @@ const Setup = () => {
   const handleCreateEvent = async () => {
     const eventId = nanoid(6);
     await addDoc(collection(db, 'events'), { name: eventId });    
-    //setUniqueUrl(`${window.location.origin}/choosinator/#/${eventId}`);
     setUniqueUrl(`${window.location.origin}/${eventId}`);
   };
 

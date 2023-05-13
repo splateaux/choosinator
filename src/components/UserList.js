@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { addDoc, doc, db, query, collection, onSnapshot, orderBy, updateDoc, deleteDoc } from '../firebase';
 import GameSelectionWithPoints from './GameSelectionWithPoints';
 import CustomBarChart from './BarChart';
 
 const UserList = () => {
-  const { eventCode } = useParams();
   const [users, setUsers] = useState([]);
   const currentUserDisplayName = localStorage.getItem('displayName');
   const currentEventId = localStorage.getItem('eventId');
-  const [userPoints, setUserPoints] = useState({});
   const [games, setGames] = useState([]); 
   const [allUserPoints, setAllUserPoints] = useState({});  
 
@@ -94,10 +91,8 @@ const UserList = () => {
           </li>
         ))}
       </ul>
-      <GameSelectionWithPoints onPointsUpdate={setUserPoints} />
+      <GameSelectionWithPoints />
       <CustomBarChart data={allUserPoints} games={games} users={users} />
-      {/* <CustomBarChart data={userPoints} games={games} users={users} /> */}
-      {/* <CustomBarChart data={userPoints} games={games}/> */}
     </div>
   );
 };
