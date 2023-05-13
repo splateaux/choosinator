@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import DisplayNameForm from "./DisplayNameForm";
+import DisplayNamePrompt from "./DisplayNamePrompt.jsx";
 import UserList from "./UserList";
 
 const GameChoosingPage = () => {
@@ -20,7 +20,7 @@ const GameChoosingPage = () => {
       {displayName ? (
           <UserList />
       ) : (
-        <DisplayNameForm onDisplayNameSubmit={handleDisplayNameSubmit} />
+        <DisplayNamePrompt onDisplayNameSubmit={handleDisplayNameSubmit} />
       )}
     </div>
   );

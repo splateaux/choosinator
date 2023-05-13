@@ -72,3 +72,32 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Components
+
+### Setup
+
+Initial page used to maintain a list of games and to create new `event`s 
+
+### UserList
+
+Main purpose is to build and display the current list of users for this `event`
+Currently also responsible for displaying `UserPointsBarchart` and `GameSelectionWithPoints`
+
+### UserPointsBarchart
+
+Sole purpose is to display the barchart that shows point distribution across games.  Replies entirely on UserList feeding in this data (points data, games data, and users data)
+
+### GameSelectionWithPoints
+
+Displays the list of games available for the event, lets current user clear their points as well as assign points to games
+
+### DisplayNamePrompt
+
+Prompts user for a display name, communicates name back through callback provided to constructor
+
+### GameChoosingPage
+
+Responsible for initial routing when user lands on `../{eventCode}` url
+Calls DisplayNamePrompt to see if, and prompt for if we don't, have a displayName
+Once it has a displayName, it shows the UserList

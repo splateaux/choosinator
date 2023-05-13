@@ -17,7 +17,7 @@ Chart.register(
   Title
 );
 
-const CustomBarChart = ({ data, games, users }) => {
+const UserPointsBarChart = ({ data, games, users }) => {
   const userColors = users.reduce((acc, user) => {
     acc[user.id] = user.color;
     return acc;
@@ -84,4 +84,4 @@ const CustomBarChart = ({ data, games, users }) => {
   );
 };
 
-export default CustomBarChart;
+export default UserPointsBarChart;

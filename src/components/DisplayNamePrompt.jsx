@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import randomcolor from 'randomcolor';
 import { useParams } from 'react-router-dom';
 
-const DisplayNameForm = ({ onDisplayNameSubmit }) => {
+const DisplayNamePrompt = ({ onDisplayNameSubmit }) => {
   const [displayName, setDisplayName] = useState("");
   const { eventCode } = useParams();  
 
@@ -66,4 +66,4 @@ const DisplayNameForm = ({ onDisplayNameSubmit }) => {
   );
 };
 
-export default DisplayNameForm;
+export default DisplayNamePrompt;

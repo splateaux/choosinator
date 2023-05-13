@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { addDoc, doc, db, query, collection, onSnapshot, orderBy, updateDoc, deleteDoc } from '../firebase';
 import GameSelectionWithPoints from './GameSelectionWithPoints';
-import CustomBarChart from './BarChart';
+import UserPointsBarChart from './UserPointsBarChart';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -92,7 +92,7 @@ const UserList = () => {
         ))}
       </ul>
       <GameSelectionWithPoints />
-      <CustomBarChart data={allUserPoints} games={games} users={users} />
+      <UserPointsBarChart data={allUserPoints} games={games} users={users} />
     </div>
   );
 };
