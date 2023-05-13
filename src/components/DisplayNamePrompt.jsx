@@ -2,11 +2,9 @@ import React, { useState, useEffect  } from "react";
 import { addDoc, where, query, collection, onSnapshot, getDocs, updateDoc, deleteDoc } from '../firebase';
 import { db } from '../firebase';
 import randomcolor from 'randomcolor';
-import { useParams } from 'react-router-dom';
 
-const DisplayNamePrompt = ({ onDisplayNameSubmit }) => {
+const DisplayNamePrompt = ({ onDisplayNameSubmit, event}) => {
   const [displayName, setDisplayName] = useState("");
-  const { eventCode } = useParams();  
 
   useEffect(() => {
     const savedDisplayName = localStorage.getItem('displayName');
@@ -17,21 +15,6 @@ const DisplayNamePrompt = ({ onDisplayNameSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const eventsRef = collection(db, `events`);
-    const q = query(eventsRef, where('name', '==', eventCode));
-
-    const querySnapshot = await getDocs(q);
-    const events = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    const event = events[0];
-    if (event === undefined) {
-      alert('Invalid game id');
-      return;
-    }
 
     if (displayName.trim() === '') {
         alert('Display name cannot be empty');
@@ -45,7 +28,6 @@ const DisplayNamePrompt = ({ onDisplayNameSubmit }) => {
     localStorage.setItem('displayName', displayName);
     localStorage.setItem('userColor', userColor);
     localStorage.setItem('userId', docRef.id);
-    localStorage.setItem('eventId', event.id);
     
     onDisplayNameSubmit(displayName);
   };

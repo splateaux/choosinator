@@ -3,16 +3,15 @@ import { addDoc, doc, db, query, collection, onSnapshot, orderBy, updateDoc, del
 import GameSelectionWithPoints from './GameSelectionWithPoints';
 import UserPointsBarChart from './UserPointsBarChart';
 
-const UserList = () => {
+const UserList = ({event}) => {
   const [users, setUsers] = useState([]);
   const currentUserDisplayName = localStorage.getItem('displayName');
-  const currentEventId = localStorage.getItem('eventId');
   const [games, setGames] = useState([]); 
   const [allUserPoints, setAllUserPoints] = useState({});  
 
   useEffect(() => {
     try{
-        const usersRef = collection(db, `events/${currentEventId}/users`);
+        const usersRef = collection(db, `events/${event.id}/users`);
         const q = query(usersRef, orderBy('displayName'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -32,7 +31,7 @@ const UserList = () => {
   }, []);
 
   useEffect(() => {
-    const pointsRef = collection(db, `events/${currentEventId}/points`);
+    const pointsRef = collection(db, `events/${event.id}/points`);
     const q = query(pointsRef);
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -51,7 +50,7 @@ const UserList = () => {
     });
   
     return () => unsubscribe();
-  }, [currentEventId]);
+  }, [event.id]);
 
   // Fetch games data
   useEffect(() => {
@@ -91,7 +90,7 @@ const UserList = () => {
           </li>
         ))}
       </ul>
-      <GameSelectionWithPoints />
+      <GameSelectionWithPoints event={event}/>
       <UserPointsBarChart data={allUserPoints} games={games} users={users} />
     </div>
   );

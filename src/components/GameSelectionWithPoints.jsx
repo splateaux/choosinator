@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, orderBy, doc, query, collection, onSnapshot, getDoc, updateDoc, setDoc } from '../firebase';
 import styles from './GameSelectionWithPoints.module.css';
 
-const GameSelectionWithPoints = () => {
+const GameSelectionWithPoints = ({event}) => {
   const [games, setGames] = useState([]);
   const [points, setPoints] = useState({});
   const maxPoints = 100;
@@ -10,7 +10,6 @@ const GameSelectionWithPoints = () => {
   const [errors, setErrors] = useState({});
   const currentUserColor = localStorage.getItem("userColor");
   const currentUserId = localStorage.getItem('userId');
-  const currentEventId = localStorage.getItem('eventId');
 
   useEffect(() => {
     const gamesRef = collection(db, 'games');
@@ -32,7 +31,7 @@ const GameSelectionWithPoints = () => {
     setRemainingBalance(maxPoints);
     setErrors({});
 
-    const pointsRef = doc(db, `events/${currentEventId}/points/${currentUserId}`);
+    const pointsRef = doc(db, `events/${event.id}/points/${currentUserId}`);
     getDoc(pointsRef).then((docSnapshot) => {
       if (docSnapshot.exists()) {
         const clearedPointsData = games.reduce((acc, game) => {
@@ -81,7 +80,7 @@ const GameSelectionWithPoints = () => {
     setRemainingBalance(maxPoints - totalPoints);
     setErrors(newErrors);
 
-    const pointsRef = doc(db, `events/${currentEventId}/points/${currentUserId}`);
+    const pointsRef = doc(db, `events/${event.id}/points/${currentUserId}`);
     getDoc(pointsRef).then((docSnapshot) => {
       if (docSnapshot.exists()) {
         updateDoc(pointsRef, {
