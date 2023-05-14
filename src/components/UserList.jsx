@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { addDoc, doc, db, query, collection, onSnapshot, orderBy, updateDoc, deleteDoc } from '../firebase';
 import GameSelectionWithPoints from './GameSelectionWithPoints';
 import UserPointsBarChart from './UserPointsBarChart';
-import randomcolor from 'randomcolor';
-import { useInsertionEffect } from 'react';
+import distinctColors from 'distinct-colors';
 
 const UserList = ({event}) => {
   const [users, setUsers] = useState([]);
@@ -12,6 +11,13 @@ const UserList = ({event}) => {
   const [games, setGames] = useState([]); 
   const [allUserPoints, setAllUserPoints] = useState({});  
   const [usersFetched, setUsersFetched] = useState(false);
+  const palette = distinctColors({ count: 20 });
+  const [nextColorIndex, setNextColorIndex] = useState(0);
+
+  function getNextColor() {
+    const color = palette[nextColorIndex];
+    return color.toString();
+  }
 
   useEffect(() => {
     try{
@@ -25,6 +31,7 @@ const UserList = ({event}) => {
               ...doc.data(),
           }));
           setUsers(fetchedUsers);
+          setNextColorIndex(Math.max(19, fetchedUsers.length + 1)); // just a ghetto way of prevening going over our color pallete limit
           setUsersFetched(true);
         });
 
@@ -47,7 +54,7 @@ const UserList = ({event}) => {
     var foundUser = users.find(u => u.displayName === currentUserDisplayName);
     if (!foundUser) {
       // If we didn't find them, make a new user for this event
-      const userColor = randomcolor();
+      const userColor = getNextColor();
       const newUser = { displayName: currentUserDisplayName, color: userColor };      
   
       addUser(newUser).then((createdUser) => {
