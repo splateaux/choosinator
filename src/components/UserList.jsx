@@ -11,12 +11,22 @@ const UserList = ({event}) => {
   const [games, setGames] = useState([]); 
   const [allUserPoints, setAllUserPoints] = useState({});  
   const [usersFetched, setUsersFetched] = useState(false);
-  const palette = distinctColors({ count: 20 });
-  const [nextColorIndex, setNextColorIndex] = useState(0);
+  const palette = distinctColors({ count: 40 });
 
   function getNextColor() {
-    const color = palette[nextColorIndex];
-    return color.toString();
+    let attempts = 0;
+    let color = palette[attempts].toString();
+    let colorAlreadyInUse = users.find(user => user.color === color);
+     // keep track of attempts to prevent an infinite loop
+    
+    while (colorAlreadyInUse && attempts < palette.length) {
+      attempts++;
+      color = palette[attempts].toString();
+      colorAlreadyInUse = users.find(user => user.color === color);
+    }
+  
+    // Otherwise, return the found unused color
+    return color;
   }
 
   useEffect(() => {
@@ -31,7 +41,6 @@ const UserList = ({event}) => {
               ...doc.data(),
           }));
           setUsers(fetchedUsers);
-          setNextColorIndex(Math.max(19, fetchedUsers.length + 1)); // just a ghetto way of prevening going over our color pallete limit
           setUsersFetched(true);
         });
 
