@@ -23,7 +23,6 @@ const GameChoosingPage = () => {
   
       const foundEvent = events[0];
       if (foundEvent == null) {
-        alert("Invalid Event");
         return null;
       }
 
@@ -41,12 +40,12 @@ const GameChoosingPage = () => {
   }, [eventCode]);
 
   const handleDisplayNameSubmit = (name) => {
+    localStorage.setItem('displayName', name);  
     setDisplayName(name);
   };
 
   return (
     <div>
-      <h1>What are we playing tonight?</h1>
       {
         event ? (
           displayName ? (
@@ -55,7 +54,7 @@ const GameChoosingPage = () => {
             <DisplayNamePrompt onDisplayNameSubmit={handleDisplayNameSubmit} event={event} />
           )
         ): (
-          <div>Fuck off!</div>
+          <div>Fuck off!  Well, perhaps you're just using the wrong url/event code... but still, fuck off!</div>
         )
       }
     </div>

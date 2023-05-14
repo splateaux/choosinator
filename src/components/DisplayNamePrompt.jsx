@@ -1,7 +1,6 @@
 import React, { useState, useEffect  } from "react";
 import { addDoc, where, query, collection, onSnapshot, getDocs, updateDoc, deleteDoc } from '../firebase';
 import { db } from '../firebase';
-import randomcolor from 'randomcolor';
 
 const DisplayNamePrompt = ({ onDisplayNameSubmit, event}) => {
   const [displayName, setDisplayName] = useState("");
@@ -20,20 +19,13 @@ const DisplayNamePrompt = ({ onDisplayNameSubmit, event}) => {
         alert('Display name cannot be empty');
         return;
       }
-
-    const userColor = randomcolor();
-    const newUser = { displayName, color: userColor };      
-
-    const docRef = await addDoc(collection(db, `events/${event.id}/users`), newUser);
-    localStorage.setItem('displayName', displayName);
-    localStorage.setItem('userColor', userColor);
-    localStorage.setItem('userId', docRef.id);
     
     onDisplayNameSubmit(displayName);
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      <h1>Choose a display name for the game choosinating!</h1> 
       <label>
         Display Name:
         <input

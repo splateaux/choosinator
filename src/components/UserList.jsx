@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { addDoc, doc, db, query, collection, onSnapshot, orderBy, updateDoc, deleteDoc } from '../firebase';
 import GameSelectionWithPoints from './GameSelectionWithPoints';
 import UserPointsBarChart from './UserPointsBarChart';
+import randomcolor from 'randomcolor';
+import { useInsertionEffect } from 'react';
 
 const UserList = ({event}) => {
   const [users, setUsers] = useState([]);
   const currentUserDisplayName = localStorage.getItem('displayName');
+  const [currentUser, setUser] = useState(null);
   const [games, setGames] = useState([]); 
   const [allUserPoints, setAllUserPoints] = useState({});  
+  const [usersFetched, setUsersFetched] = useState(false);
 
   useEffect(() => {
     try{
+        // Go get all users for this event
         const usersRef = collection(db, `events/${event.id}/users`);
         const q = query(usersRef, orderBy('displayName'));
 
@@ -20,15 +25,54 @@ const UserList = ({event}) => {
               ...doc.data(),
           }));
           setUsers(fetchedUsers);
+          setUsersFetched(true);
         });
 
-        
         return () => unsubscribe();
     } catch (error) {
         console.error("Error getting event users: ", error);
     }  
 
   }, []);
+
+  useEffect(() => {
+    const addUser = async (user) => {
+      const docRef = await addDoc(collection(db, `events/${event.id}/users`), user);
+      user.id = docRef.id;
+      return user;
+    };
+
+    if (!usersFetched) return;
+    // See if the current user is one this event already
+    var foundUser = users.find(u => u.displayName === currentUserDisplayName);
+    if (!foundUser) {
+      // If we didn't find them, make a new user for this event
+      const userColor = randomcolor();
+      const newUser = { displayName: currentUserDisplayName, color: userColor };      
+  
+      addUser(newUser).then((createdUser) => {
+        setUser(createdUser);
+      });
+    } else {
+      setUser(foundUser);
+    }
+
+  }, [users]);
+
+  useEffect(() => {
+    if (currentUser != null && currentUser != undefined) {
+      var foundUser = users.find(u => u.displayName === currentUserDisplayName);
+
+      if (!foundUser) {
+        const newUsers = users.concat(currentUser);
+        setUsers(newUsers);
+      }
+
+      // Store what we've got
+      localStorage.setItem('userColor', currentUser.color);
+      localStorage.setItem('userId', currentUser.id);  
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const pointsRef = collection(db, `events/${event.id}/points`);
@@ -70,6 +114,7 @@ const UserList = ({event}) => {
 
   return (
     <div>
+      <h1>What are we playing tonight?</h1>      
       <h2>Participants:</h2>
       <ul>
         {users.map((user) => (
@@ -89,7 +134,7 @@ const UserList = ({event}) => {
             </span>
           </li>
         ))}
-      </ul>
+      </ul>    
       <GameSelectionWithPoints event={event}/>
       <UserPointsBarChart data={allUserPoints} games={games} users={users} />
     </div>
