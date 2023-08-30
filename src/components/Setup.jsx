@@ -29,7 +29,7 @@ const Setup = () => {
       if (!IsNameValid(newGame)) return;
 
       try {
-          const response = await addDoc(collection(db, "games"), {
+          const response = await addDoc(collection(db, "games_lancon"), {
               name: newGame,
               });
   
@@ -78,12 +78,12 @@ const Setup = () => {
   const handleUpdateGame = async (id, name) => {
     if (!IsNameValid(name)) return;
 
-    await updateDoc(doc(db, 'games', id), { name });
+    await updateDoc(doc(db, 'games_lancon', id), { name });
     setSelectedGame(null);
   };
 
   const handleDeleteGame = async (id) => {
-    await deleteDoc(doc(db, 'games', id));
+    await deleteDoc(doc(db, 'games_lancon', id));
   };
 
   const handleCreateEvent = async () => {
