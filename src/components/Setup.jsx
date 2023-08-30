@@ -11,7 +11,7 @@ const Setup = () => {
   const [copyMessage, setCopyMessage] = useState('');
 
   useEffect(() => {
-    const q = query(collection(db, "games"), orderBy("name", "asc"));
+    const q = query(collection(db, "games_lancon"), orderBy("name", "asc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const _games = [];
 
