@@ -12,7 +12,7 @@ const GameSelectionWithPoints = ({event}) => {
   const currentUserId = localStorage.getItem('userId');
 
   useEffect(() => {
-    const gamesRef = collection(db, 'games');
+    const gamesRef = collection(db, 'games_lancon');
     const q = query(gamesRef, orderBy('name'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
