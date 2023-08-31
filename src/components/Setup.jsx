@@ -94,7 +94,7 @@ const Setup = () => {
 
   return (
     <div>
-      <h1>Setup / Event Creator</h1>
+      <h1>LanCon 2023 Bitches!</h1>
       <div>
         <input
           type="text"
