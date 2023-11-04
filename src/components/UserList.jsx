@@ -114,7 +114,7 @@ const UserList = ({event}) => {
 
   // Fetch games data
   useEffect(() => {
-    const gamesRef = collection(db, 'games_lancon');
+    const gamesRef = collection(db, 'games');
     const q = query(gamesRef, orderBy('name'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

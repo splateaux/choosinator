@@ -11,7 +11,7 @@ const Setup = () => {
   const [copyMessage, setCopyMessage] = useState('');
 
   useEffect(() => {
-    const q = query(collection(db, "games_lancon"), orderBy("name", "asc"));
+    const q = query(collection(db, "games"), orderBy("name", "asc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const _games = [];
 
@@ -29,7 +29,7 @@ const Setup = () => {
       if (!IsNameValid(newGame)) return;
 
       try {
-          const response = await addDoc(collection(db, "games_lancon"), {
+          const response = await addDoc(collection(db, "games"), {
               name: newGame,
               });
   
@@ -78,12 +78,12 @@ const Setup = () => {
   const handleUpdateGame = async (id, name) => {
     if (!IsNameValid(name)) return;
 
-    await updateDoc(doc(db, 'games_lancon', id), { name });
+    await updateDoc(doc(db, 'games', id), { name });
     setSelectedGame(null);
   };
 
   const handleDeleteGame = async (id) => {
-    await deleteDoc(doc(db, 'games_lancon', id));
+    await deleteDoc(doc(db, 'games', id));
   };
 
   const handleCreateEvent = async () => {
@@ -94,7 +94,7 @@ const Setup = () => {
 
   return (
     <div>
-      <h1>LanCon 2023 Bitches!</h1>
+      <h1>Games Bitches!</h1>
       <div>
         <input
           type="text"
