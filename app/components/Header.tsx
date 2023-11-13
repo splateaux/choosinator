@@ -1,11 +1,13 @@
-import React from "react";
 import { Form, Link } from "@remix-run/react";
+import React from "react";
+
 import { User } from "~/models/user.server";
+
 import { useTheme } from "../root";
 
-type HeaderProps = {
+interface HeaderProps {
     user?: User; // User prop is optional
-};
+}
 
 const Header: React.FC<HeaderProps> = ({ user }) => {
     const { toggleTheme } = useTheme();

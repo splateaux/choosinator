@@ -1,11 +1,14 @@
 import React, { ReactNode } from "react";
-import Header from "./Header";
+
 import { User } from "~/models/user.server";
 
-type LayoutProps = {
+import Header from "./Header";
+
+
+interface LayoutProps {
     children: ReactNode;
     user?: User;
-};
+}
 
 const Layout: React.FC<LayoutProps> = ({ children, user }) => {
     return (

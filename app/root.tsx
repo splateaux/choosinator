@@ -1,7 +1,6 @@
 import { cssBundleHref } from "@remix-run/css-bundle";
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import React, { useState, useEffect, createContext, useContext } from 'react';
 import {
   Links,
   LiveReload,
@@ -10,6 +9,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
+import { useState, useEffect, createContext, useContext } from 'react';
 
 import { getUser } from "~/session.server";
 import stylesheet from "~/tailwind.css";
@@ -26,6 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 // Create a context for the theme
 const ThemeContext = createContext({
   theme: 'light-mode',
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   toggleTheme: () => { },
 });
 
