@@ -30,7 +30,10 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
                         </Form>
                     </>
                 ) : (
-                    <Link to="/login">Log In</Link>
+                    <>
+                        <Link to="/join">Sign Up</Link>
+                        <Link to="/login" style={{ marginLeft: '15px' }}>Log In</Link>
+                    </>
                 )}
             </div>
         </header>
