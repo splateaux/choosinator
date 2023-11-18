@@ -13,12 +13,12 @@ export interface Password {
 export async function getUserById(id: User["id"]): Promise<User | null> {
   const db = await arc.tables();
   const result = await db.user.query({
-    KeyConditionExpression: "pk = :pk",
-    ExpressionAttributeValues: { ":pk": id },
+    KeyConditionExpression: "userId = :userId",
+    ExpressionAttributeValues: { ":userId": id },
   });
 
   const [record] = result.Items;
-  if (record) return { id: record.pk, email: record.email };
+  if (record) return { id: record.userId, email: record.email };
   return null;
 }
 
@@ -29,8 +29,8 @@ export async function getUserByEmail(email: User["email"]) {
 async function getUserPasswordByEmail(email: User["email"]) {
   const db = await arc.tables();
   const result = await db.password.query({
-    KeyConditionExpression: "pk = :pk",
-    ExpressionAttributeValues: { ":pk": `email#${email}` },
+    KeyConditionExpression: "userId = :userId",
+    ExpressionAttributeValues: { ":userId": `email#${email}` },
   });
 
   const [record] = result.Items;
@@ -46,12 +46,12 @@ export async function createUser(
   const hashedPassword = await bcrypt.hash(password, 10);
   const db = await arc.tables();
   await db.password.put({
-    pk: `email#${email}`,
+    userId: `email#${email}`,
     password: hashedPassword,
   });
 
   await db.user.put({
-    pk: `email#${email}`,
+    userId: `email#${email}`,
     email,
   });
 
@@ -63,8 +63,8 @@ export async function createUser(
 
 export async function deleteUser(email: User["email"]) {
   const db = await arc.tables();
-  await db.password.delete({ pk: `email#${email}` });
-  await db.user.delete({ pk: `email#${email}` });
+  await db.password.delete({ userId: `email#${email}` });
+  await db.user.delete({ userId: `email#${email}` });
 }
 
 export async function verifyLogin(

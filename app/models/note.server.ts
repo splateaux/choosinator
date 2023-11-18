@@ -11,12 +11,12 @@ export interface Note {
 }
 
 interface NoteItem {
-  pk: User["id"];
-  sk: `note#${Note["id"]}`;
+  userId: User["id"];
+  noteId: `note#${Note["id"]}`;
 }
 
-const skToId = (sk: NoteItem["sk"]): Note["id"] => sk.replace(/^note#/, "");
-const idToSk = (id: Note["id"]): NoteItem["sk"] => `note#${id}`;
+const noteIdToId = (noteId: NoteItem["noteId"]): Note["id"] => noteId.replace(/^note#/, "");
+const idTonoteId = (id: Note["id"]): NoteItem["noteId"] => `note#${id}`;
 
 export async function getNote({
   id,
@@ -24,12 +24,12 @@ export async function getNote({
 }: Pick<Note, "id" | "userId">): Promise<Note | null> {
   const db = await arc.tables();
 
-  const result = await db.note.get({ pk: userId, sk: idToSk(id) });
+  const result = await db.note.get({ userId: userId, noteId: idTonoteId(id) });
 
   if (result) {
     return {
-      userId: result.pk,
-      id: result.sk,
+      userId: result.userId,
+      id: result.noteId,
       title: result.title,
       body: result.body,
     };
@@ -43,14 +43,14 @@ export async function getNoteListItems({
   const db = await arc.tables();
 
   const result = await db.note.query({
-    KeyConditionExpression: "pk = :pk",
-    ExpressionAttributeValues: { ":pk": userId },
+    KeyConditionExpression: "userId = :userId",
+    ExpressionAttributeValues: { ":userId": userId },
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return result.Items.map((n: any) => ({
     title: n.title,
-    id: skToId(n.sk),
+    id: noteIdToId(n.noteId),
   }));
 }
 
@@ -62,14 +62,14 @@ export async function createNote({
   const db = await arc.tables();
 
   const result = await db.note.put({
-    pk: userId,
-    sk: idToSk(createId()),
+    userId: userId,
+    noteId: idTonoteId(createId()),
     title: title,
     body: body,
   });
   return {
-    id: skToId(result.sk),
-    userId: result.pk,
+    id: noteIdToId(result.noteId),
+    userId: result.userId,
     title: result.title,
     body: result.body,
   };
@@ -77,5 +77,5 @@ export async function createNote({
 
 export async function deleteNote({ id, userId }: Pick<Note, "id" | "userId">) {
   const db = await arc.tables();
-  return db.note.delete({ pk: userId, sk: idToSk(id) });
+  return db.note.delete({ userId: userId, noteId: idTonoteId(id) });
 }
