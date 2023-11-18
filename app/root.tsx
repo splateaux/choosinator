@@ -8,8 +8,10 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  isRouteErrorResponse,
+  useRouteError,
 } from "@remix-run/react";
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from "react";
 
 import { getUser } from "~/session.server";
 import stylesheet from "~/tailwind.css";
@@ -25,32 +27,50 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 // Create a context for the theme
 const ThemeContext = createContext({
-  theme: 'light-mode',
+  theme: "light-mode",
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  toggleTheme: () => { },
+  toggleTheme: () => {},
 });
 
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    throw new Error("useTheme must be used within a ThemeProvider");
   }
   return context;
 }
 
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  if (error instanceof Error) {
+    return <div>An unexpected error occurred: {error.message}</div>;
+  }
+
+  if (!isRouteErrorResponse(error)) {
+    return <h1>Unknown Error</h1>;
+  }
+
+  if (error.status === 404) {
+    return <div>Note not found</div>;
+  }
+
+  return <div>An unexpected error occurred: {error.statusText}</div>;
+}
+
 export default function App() {
-  const [theme, setTheme] = useState('dark-mode');
+  const [theme, setTheme] = useState("dark-mode");
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem('theme') || 'light-mode';
+    const storedTheme = localStorage.getItem("theme") || "light-mode";
     setTheme(storedTheme);
     document.body.className = storedTheme;
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = theme === 'light-mode' ? 'dark-mode' : 'light-mode';
+    const newTheme = theme === "light-mode" ? "dark-mode" : "light-mode";
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
+    localStorage.setItem("theme", newTheme);
     document.body.className = newTheme;
   };
 

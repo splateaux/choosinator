@@ -1,13 +1,15 @@
 body {
-    transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 .light-mode {
-    background-color: white;
-    color: #301934;
+  background-color: rgb(161, 156, 156);
+  color: #3f1c46;
 }
 
 .dark-mode {
-    background-color: black;
-    color: #800080;
+  background-color: black;
+  color: #800080;
 }

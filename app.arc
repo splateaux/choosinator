@@ -22,11 +22,23 @@ plugin-remix
 
 @tables
 user
-  pk *String
+  userId *String
 
 password
-  pk *String # userId
+  userId *String
 
 note
-  pk *String  # userId
-  sk **String # noteId
+  userId *String 
+  noteId **String
+
+optionsList
+  userId *String
+  optionsListId **String 
+
+option
+  optionsListId *String
+  optionsId **String 
+
+optionsListSharing
+  userId *String 
+  optionsListId **String

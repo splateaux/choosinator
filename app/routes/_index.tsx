@@ -4,7 +4,7 @@ import { Link } from "@remix-run/react";
 import Layout from "~/components/Layout";
 import { useOptionalUser } from "~/utils";
 
-export const meta: MetaFunction = () => [{ title: "Remix Notes" }];
+export const meta: MetaFunction = () => [{ title: "Choosinator" }];
 
 export default function Index() {
   const user = useOptionalUser();
@@ -17,15 +17,17 @@ export default function Index() {
               {user ? (
                 <div>
                   <Link
-                    to="/notes"
+                    to="/optionsLists"
                     className="flex items-center justify-center rounded-md border border-transparent px-4 py-3 text-base font-medium shadow-sm hover:bg-red-50 sm:px-8"
                   >
-                    View Notes for {user.email}
+                    View Options Lists
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-4 sm:mx-auto sm:inline-grid sm:grid-cols-2 sm:gap-5 sm:space-y-0">
-                  Words will go here eventually
+                  <h1>
+                    Welcome to Choosinator, where things are chosen... ated!
+                  </h1>
                 </div>
               )}
             </div>
