@@ -1,5 +1,5 @@
 @app
-choosinator-d2bd
+choosinator
 
 @aws
 runtime nodejs18.x
