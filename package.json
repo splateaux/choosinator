@@ -41,7 +41,6 @@
     "@testing-library/cypress": "^10.0.3",
     "@testing-library/jest-dom": "^6.6.4",
     "@types/architect__functions": "^3.13.11",
-    "@types/bcryptjs": "^3.0.0",
     "@types/eslint": "^8.56.12",
     "@types/node": "^18.19.121",
     "@types/react": "^18.3.23",
