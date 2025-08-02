@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type MockedFunction } from "vitest";
 
 import { createOptionsList, getOptionsList, getOptionsListsByOwner, deleteOptionsList } from "./optionsList.server";
 
@@ -30,14 +30,14 @@ describe("OptionsList Server Model", () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         const arc = await import("@architect/functions");
-        arc.default.tables.mockResolvedValue(mockDb);
+        (arc.default.tables as MockedFunction<typeof arc.default.tables>).mockResolvedValue(mockDb as any);
     });
 
     describe("createOptionsList", () => {
         it("should create a new options list successfully", async () => {
             const mockResult = {
                 optionsListId: "test-id-123",
-                userId: "user-123",
+                userId: "email#user@example.com",
                 name: "Test List",
             };
 
@@ -45,18 +45,18 @@ describe("OptionsList Server Model", () => {
 
             const result = await createOptionsList({
                 name: "Test List",
-                ownerUserId: "user-123",
+                ownerUserId: "email#user@example.com",
             });
 
             expect(mockDb.optionsList.put).toHaveBeenCalledWith({
-                userId: "user-123",
+                userId: "email#user@example.com",
                 optionsListId: "test-id-123",
                 name: "Test List",
             });
 
             expect(result).toEqual({
                 id: "test-id-123",
-                ownerUserId: "user-123",
+                ownerUserId: "email#user@example.com",
                 name: "Test List",
             });
         });
@@ -66,7 +66,7 @@ describe("OptionsList Server Model", () => {
         it("should return options list when found", async () => {
             const mockResult = {
                 optionsListId: "test-id-123",
-                userId: "user-123",
+                userId: "email#user@example.com",
                 name: "Test List",
             };
 
@@ -74,17 +74,17 @@ describe("OptionsList Server Model", () => {
 
             const result = await getOptionsList({
                 id: "test-id-123",
-                ownerUserId: "user-123",
+                ownerUserId: "email#user@example.com",
             });
 
             expect(mockDb.optionsList.get).toHaveBeenCalledWith({
-                userId: "user-123",
+                userId: "email#user@example.com",
                 optionsListId: "test-id-123",
             });
 
             expect(result).toEqual({
                 id: "test-id-123",
-                ownerUserId: "user-123",
+                ownerUserId: "email#user@example.com",
                 name: "Test List",
             });
         });
@@ -94,7 +94,7 @@ describe("OptionsList Server Model", () => {
 
             const result = await getOptionsList({
                 id: "non-existent",
-                ownerUserId: "user-123",
+                ownerUserId: "email#user@example.com",
             });
 
             expect(result).toBeNull();
@@ -107,12 +107,12 @@ describe("OptionsList Server Model", () => {
                 Items: [
                     {
                         optionsListId: "list-1",
-                        userId: "user-123",
+                        userId: "email#user@example.com",
                         name: "List 1",
                     },
                     {
                         optionsListId: "list-2",
-                        userId: "user-123",
+                        userId: "email#user@example.com",
                         name: "List 2",
                     },
                 ],
@@ -120,24 +120,24 @@ describe("OptionsList Server Model", () => {
 
             mockDb.optionsList.query.mockResolvedValue(mockResults);
 
-            const result = await getOptionsListsByOwner("user-123");
+            const result = await getOptionsListsByOwner("email#user@example.com");
 
             expect(mockDb.optionsList.query).toHaveBeenCalledWith({
                 KeyConditionExpression: 'userId = :ownerUserId',
                 ExpressionAttributeValues: {
-                    ':ownerUserId': 'user-123',
+                    ':ownerUserId': 'email#user@example.com',
                 },
             });
 
             expect(result).toEqual([
                 {
                     id: "list-1",
-                    ownerUserId: "user-123",
+                    ownerUserId: "email#user@example.com",
                     name: "List 1",
                 },
                 {
                     id: "list-2",
-                    ownerUserId: "user-123",
+                    ownerUserId: "email#user@example.com",
                     name: "List 2",
                 },
             ]);
@@ -150,7 +150,7 @@ describe("OptionsList Server Model", () => {
 
             mockDb.optionsList.query.mockResolvedValue(mockResults);
 
-            const result = await getOptionsListsByOwner("user-123");
+            const result = await getOptionsListsByOwner("email#user@example.com");
 
             expect(result).toEqual([]);
         });
@@ -162,11 +162,11 @@ describe("OptionsList Server Model", () => {
 
             await deleteOptionsList({
                 id: "test-id-123",
-                ownerUserId: "user-123",
+                ownerUserId: "email#user@example.com",
             });
 
             expect(mockDb.optionsList.delete).toHaveBeenCalledWith({
-                userId: "user-123",
+                userId: "email#user@example.com",
                 optionsListId: "test-id-123",
             });
         });

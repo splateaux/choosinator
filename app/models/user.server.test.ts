@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type MockedFunction } from "vitest";
 
 import { createUser, getUserByEmail, getUserById, verifyLogin, deleteUser } from "./user.server";
 
@@ -44,7 +44,7 @@ describe("User Server Model", () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         const arc = await import("@architect/functions");
-        arc.default.tables.mockResolvedValue(mockDb);
+        (arc.default.tables as MockedFunction<typeof arc.default.tables>).mockResolvedValue(mockDb as any);
     });
 
     describe("createUser", () => {
@@ -53,7 +53,7 @@ describe("User Server Model", () => {
             const password = "testpassword123";
             const hashedPassword = "hashed-password";
 
-            (bcrypt.hash as vi.MockedFunction<typeof bcrypt.hash>).mockResolvedValue(hashedPassword);
+            (vi.mocked(bcrypt.hash) as any).mockResolvedValue(hashedPassword);
             mockDb.user.query.mockResolvedValue({
                 Items: [{
                     userId: `email#${email}`,
@@ -161,7 +161,7 @@ describe("User Server Model", () => {
             });
 
             // Mock bcrypt compare
-            (bcrypt.compare as vi.MockedFunction<typeof bcrypt.compare>).mockResolvedValue(true);
+            (vi.mocked(bcrypt.compare) as any).mockResolvedValue(true);
 
             // Mock getUserByEmail
             mockDb.user.query.mockResolvedValue({
@@ -199,7 +199,7 @@ describe("User Server Model", () => {
             mockDb.password.query.mockResolvedValue({
                 Items: [{ password: hashedPassword }],
             });
-            (bcrypt.compare as vi.MockedFunction<typeof bcrypt.compare>).mockResolvedValue(false);
+            (vi.mocked(bcrypt.compare) as any).mockResolvedValue(false);
 
             const result = await verifyLogin(email, "wrong-password");
 
