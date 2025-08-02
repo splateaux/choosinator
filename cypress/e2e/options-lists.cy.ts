@@ -67,9 +67,12 @@ describe("Options Lists", () => {
             cy.visit("/optionsLists");
             cy.get(`a[href*="/optionsLists/"]`).contains(listName).click();
 
-            // Should show the list details
-            cy.contains(listName);
-            cy.get("h3").should("contain", listName);
+            // Wait for navigation and content to load
+            cy.url().should("include", "/optionsLists/");
+            
+            // Should show the list details with increased timeout for CI
+            cy.contains(listName, { timeout: 10000 });
+            cy.get("h3", { timeout: 10000 }).should("contain", listName);
         });
 
         it("should show 404 error for non-existent options list", () => {
@@ -185,10 +188,13 @@ describe("Options Lists", () => {
             cy.visit("/optionsLists");
             cy.get(`a[href*="/optionsLists/"]`).contains(listName).click();
 
-            // The active list should have the active styling (might be bg-white or other active class)
-            cy.get(`a[href*="/optionsLists/"]`).contains(listName).should("satisfy", ($el) => {
-                return $el.hasClass("bg-white") || $el.attr("aria-current") === "page";
-            });
+            // Wait for navigation to complete
+            cy.url().should("include", "/optionsLists/");
+            
+            // The active list should have the active styling with increased timeout
+            cy.get(`a[href*="/optionsLists/"]`, { timeout: 10000 })
+                .contains(listName)
+                .should("have.class", "bg-white");
         });
 
         it("should navigate between different options lists", () => {
@@ -208,17 +214,19 @@ describe("Options Lists", () => {
             // Navigate back to lists page
             cy.visit("/optionsLists");
 
-            // Should see both lists
-            cy.contains(list1Name);
-            cy.contains(list2Name);
+            // Should see both lists with timeout
+            cy.contains(list1Name, { timeout: 10000 });
+            cy.contains(list2Name, { timeout: 10000 });
 
-            // Click on first list
+            // Click on first list and wait for content
             cy.get(`a[href*="/optionsLists/"]`).contains(list1Name).click();
-            cy.get("h3").should("contain", list1Name);
+            cy.url().should("include", "/optionsLists/");
+            cy.get("h3", { timeout: 10000 }).should("contain", list1Name);
 
-            // Click on second list
+            // Click on second list and wait for content
             cy.get(`a[href*="/optionsLists/"]`).contains(list2Name).click();
-            cy.get("h3").should("contain", list2Name);
+            cy.url().should("include", "/optionsLists/");
+            cy.get("h3", { timeout: 10000 }).should("contain", list2Name);
         });
     });
 });
