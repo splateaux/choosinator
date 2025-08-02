@@ -116,6 +116,10 @@ module.exports = {
           version: 28,
         },
       },
+      rules: {
+        // Allow any types in test files for mocking
+        "@typescript-eslint/no-explicit-any": "off",
+      },
     },
 
     // Cypress
