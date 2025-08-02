@@ -30,7 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 const ThemeContext = createContext({
   theme: "light-mode",
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  toggleTheme: () => { },
+  toggleTheme: () => {},
 });
 
 export function useTheme() {
@@ -68,7 +68,7 @@ export default function App() {
     document.body.className = storedTheme;
 
     // Initialize performance tracking in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       trackWebVitals();
     }
   }, []);

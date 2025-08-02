@@ -31,7 +31,7 @@ export async function getOptionsList({
         };
       }
       return null;
-    }
+    },
   );
 }
 
@@ -55,7 +55,7 @@ export async function getOptionsListsByOwner(
         ownerUserId: item.userId,
         name: item.name,
       }));
-    }
+    },
   );
 }
 

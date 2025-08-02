@@ -38,12 +38,14 @@ export default function OptionsListDetailsPage() {
     <div>
       <h3 className="text-2xl font-bold">{data.optionsList.name}</h3>
       <hr className="my-4" />
-      {process.env.NODE_ENV === 'development' && (
+      {process.env.NODE_ENV === "development" && (
         <details className="mt-4 text-xs text-gray-500">
           <summary>🔍 Debug Info</summary>
           <pre className="mt-2 bg-gray-100 p-2 rounded">
-            Options List ID: {data.optionsList.id}{'\n'}
-            Owner: {data.optionsList.ownerUserId}{'\n'}
+            Options List ID: {data.optionsList.id}
+            {"\n"}
+            Owner: {data.optionsList.ownerUserId}
+            {"\n"}
             Loaded at: {new Date().toISOString()}
           </pre>
         </details>
