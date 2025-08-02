@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { createUserSession, getUserId, getUser, requireUserId, requireUser, logout } from "./session.server";
 
 // Mock Remix node
@@ -133,7 +134,7 @@ describe("Session Server", () => {
 
             const mockLogoutResponse = { url: "/login" };
             mockSessionStorage.destroySession.mockResolvedValue("destroyed-session");
-            const remix = require("@remix-run/node");
+            const remix = await import("@remix-run/node");
             remix.redirect.mockReturnValue(mockLogoutResponse);
 
             await expect(requireUserId(mockRequest)).rejects.toBe(mockLogoutResponse);

@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { createUser, getUserByEmail, getUserById, verifyLogin, deleteUser } from "./user.server";
 
 // Mock architect functions
@@ -50,7 +51,7 @@ describe("User Server Model", () => {
             const password = "testpassword123";
             const hashedPassword = "hashed-password";
 
-            (bcrypt.hash as any).mockResolvedValue(hashedPassword);
+            (bcrypt.hash as vi.MockedFunction<typeof bcrypt.hash>).mockResolvedValue(hashedPassword);
             mockDb.user.get.mockResolvedValue({
                 userId: `email#${email}`,
                 email,
@@ -114,7 +115,7 @@ describe("User Server Model", () => {
 
             mockDb.user.get.mockResolvedValue(mockUser);
 
-            const result = await getUserById(userId as any);
+            const result = await getUserById(userId);
 
             expect(mockDb.user.get).toHaveBeenCalledWith({ userId });
             expect(result).toEqual({
@@ -126,7 +127,7 @@ describe("User Server Model", () => {
         it("should return null when user not found", async () => {
             mockDb.user.get.mockResolvedValue(null);
 
-            const result = await getUserById("email#nonexistent@example.com" as any);
+            const result = await getUserById("email#nonexistent@example.com");
 
             expect(result).toBeNull();
         });
@@ -144,7 +145,7 @@ describe("User Server Model", () => {
             });
 
             // Mock bcrypt compare
-            (bcrypt.compare as any).mockResolvedValue(true);
+            (bcrypt.compare as vi.MockedFunction<typeof bcrypt.compare>).mockResolvedValue(true);
 
             // Mock getUserByEmail
             mockDb.user.get.mockResolvedValue({
@@ -180,7 +181,7 @@ describe("User Server Model", () => {
             mockDb.password.query.mockResolvedValue({
                 Items: [{ password: hashedPassword }],
             });
-            (bcrypt.compare as any).mockResolvedValue(false);
+            (bcrypt.compare as vi.MockedFunction<typeof bcrypt.compare>).mockResolvedValue(false);
 
             const result = await verifyLogin(email, "wrong-password");
 

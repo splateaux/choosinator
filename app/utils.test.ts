@@ -36,9 +36,9 @@ describe("safeRedirect", () => {
   });
 
   test("returns default URL for non-string values", () => {
-    expect(safeRedirect(123 as any, "/default")).toBe("/default");
-    expect(safeRedirect({} as any, "/default")).toBe("/default");
-    expect(safeRedirect([] as any, "/default")).toBe("/default");
+    expect(safeRedirect(123 as unknown as string, "/default")).toBe("/default");
+    expect(safeRedirect({} as unknown as string, "/default")).toBe("/default");
+    expect(safeRedirect([] as unknown as string, "/default")).toBe("/default");
   });
 
   test("returns sanitized URL for valid relative paths", () => {
