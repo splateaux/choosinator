@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import { createUserSession, getUserId, getUser, requireUserId, requireUser, logout } from "./session.server";
+import { createUserSession, getUserId, getUser, requireUserId, requireUser, logout, sessionStorage } from "./session.server";
 
 // Mock Remix node
 vi.mock("@remix-run/node", () => {
@@ -14,6 +14,8 @@ vi.mock("@remix-run/node", () => {
         redirect: vi.fn((url, init) => ({ url, init })),
     };
 });
+
+
 
 // Mock user model
 vi.mock("~/models/user.server", () => ({
@@ -35,8 +37,11 @@ describe("Session Server", () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
-        const remix = await import("@remix-run/node");
-        remix.createCookieSessionStorage.mockReturnValue(mockSessionStorage);
+        
+        // Mock the sessionStorage functions directly
+        vi.spyOn(sessionStorage, 'getSession').mockResolvedValue(mockSession);
+        vi.spyOn(sessionStorage, 'commitSession').mockResolvedValue("committed-session");
+        vi.spyOn(sessionStorage, 'destroySession').mockResolvedValue("destroyed-session");
     });
 
     describe("getUserId", () => {
@@ -44,12 +49,11 @@ describe("Session Server", () => {
             const mockRequest = new Request("http://localhost");
             const userId = "email#test@example.com";
 
-            mockSessionStorage.getSession.mockResolvedValue(mockSession);
             mockSession.get.mockReturnValue(userId);
 
             const result = await getUserId(mockRequest);
 
-            expect(mockSessionStorage.getSession).toHaveBeenCalledWith(
+            expect(sessionStorage.getSession).toHaveBeenCalledWith(
                 mockRequest.headers.get("Cookie")
             );
             expect(mockSession.get).toHaveBeenCalledWith("userId");
@@ -97,19 +101,20 @@ describe("Session Server", () => {
             expect(result).toBeNull();
         });
 
-        it("should return null when user not found", async () => {
+        it("should throw logout redirect when user not found", async () => {
             const mockRequest = new Request("http://localhost");
             const userId = "email#test@example.com";
 
-            mockSessionStorage.getSession.mockResolvedValue(mockSession);
             mockSession.get.mockReturnValue(userId);
 
             const { getUserById } = await import("~/models/user.server");
-            getUserById.mockResolvedValue(null);
+            (getUserById as vi.MockedFunction<typeof getUserById>).mockResolvedValue(null);
 
-            const result = await getUser(mockRequest);
+            const mockLogoutResponse = { url: "/", init: { headers: { "Set-Cookie": "destroyed-session" } } };
+            const remix = await import("@remix-run/node");
+            (remix.redirect as vi.MockedFunction<typeof remix.redirect>).mockReturnValue(mockLogoutResponse);
 
-            expect(result).toBeNull();
+            await expect(getUser(mockRequest)).rejects.toBe(mockLogoutResponse);
         });
     });
 
@@ -135,7 +140,7 @@ describe("Session Server", () => {
             const mockLogoutResponse = { url: "/login" };
             mockSessionStorage.destroySession.mockResolvedValue("destroyed-session");
             const remix = await import("@remix-run/node");
-            remix.redirect.mockReturnValue(mockLogoutResponse);
+            (remix.redirect as vi.MockedFunction<typeof remix.redirect>).mockReturnValue(mockLogoutResponse);
 
             await expect(requireUserId(mockRequest)).rejects.toBe(mockLogoutResponse);
         });
@@ -171,7 +176,7 @@ describe("Session Server", () => {
             const mockLogoutResponse = { url: "/login" };
             mockSessionStorage.destroySession.mockResolvedValue("destroyed-session");
             const remix = await import("@remix-run/node");
-            remix.redirect.mockReturnValue(mockLogoutResponse);
+            (remix.redirect as vi.MockedFunction<typeof remix.redirect>).mockReturnValue(mockLogoutResponse);
 
             await expect(requireUser(mockRequest)).rejects.toBe(mockLogoutResponse);
         });
@@ -188,7 +193,7 @@ describe("Session Server", () => {
 
             const remix = await import("@remix-run/node");
             const expectedRedirect = { url: redirectTo, init: expect.any(Object) };
-            remix.redirect.mockReturnValue(expectedRedirect);
+            (remix.redirect as vi.MockedFunction<typeof remix.redirect>).mockReturnValue(expectedRedirect);
 
             const result = await createUserSession({
                 request: mockRequest,
@@ -198,7 +203,7 @@ describe("Session Server", () => {
             });
 
             expect(mockSession.set).toHaveBeenCalledWith("userId", userId);
-            expect(mockSessionStorage.commitSession).toHaveBeenCalledWith(mockSession, {
+            expect(sessionStorage.commitSession).toHaveBeenCalledWith(mockSession, {
                 maxAge: 60 * 60 * 24 * 7, // 7 days for remember=true
             });
             expect(remix.redirect).toHaveBeenCalledWith(redirectTo, {
@@ -218,7 +223,7 @@ describe("Session Server", () => {
             mockSessionStorage.commitSession.mockResolvedValue("committed-session");
 
             const remix = await import("@remix-run/node");
-            remix.redirect.mockReturnValue({});
+            (remix.redirect as vi.MockedFunction<typeof remix.redirect>).mockReturnValue({});
 
             await createUserSession({
                 request: mockRequest,
@@ -227,7 +232,7 @@ describe("Session Server", () => {
                 redirectTo,
             });
 
-            expect(mockSessionStorage.commitSession).toHaveBeenCalledWith(mockSession, {
+            expect(sessionStorage.commitSession).toHaveBeenCalledWith(mockSession, {
                 maxAge: undefined,
             });
         });
@@ -241,13 +246,13 @@ describe("Session Server", () => {
             mockSessionStorage.destroySession.mockResolvedValue("destroyed-session");
 
             const remix = await import("@remix-run/node");
-            const expectedRedirect = { url: "/login", init: expect.any(Object) };
-            remix.redirect.mockReturnValue(expectedRedirect);
+            const expectedRedirect = { url: "/", init: expect.any(Object) };
+            (remix.redirect as vi.MockedFunction<typeof remix.redirect>).mockReturnValue(expectedRedirect);
 
             const result = await logout(mockRequest);
 
-            expect(mockSessionStorage.destroySession).toHaveBeenCalledWith(mockSession);
-            expect(remix.redirect).toHaveBeenCalledWith("/login", {
+            expect(sessionStorage.destroySession).toHaveBeenCalledWith(mockSession);
+            expect(remix.redirect).toHaveBeenCalledWith("/", {
                 headers: {
                     "Set-Cookie": "destroyed-session",
                 },

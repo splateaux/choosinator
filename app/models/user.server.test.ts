@@ -31,11 +31,13 @@ describe("User Server Model", () => {
         user: {
             put: vi.fn(),
             get: vi.fn(),
+            query: vi.fn(),
             delete: vi.fn(),
         },
         password: {
             put: vi.fn(),
             query: vi.fn(),
+            delete: vi.fn(),
         },
     };
 
@@ -52,9 +54,11 @@ describe("User Server Model", () => {
             const hashedPassword = "hashed-password";
 
             (bcrypt.hash as vi.MockedFunction<typeof bcrypt.hash>).mockResolvedValue(hashedPassword);
-            mockDb.user.get.mockResolvedValue({
-                userId: `email#${email}`,
-                email,
+            mockDb.user.query.mockResolvedValue({
+                Items: [{
+                    userId: `email#${email}`,
+                    email,
+                }],
             });
 
             const result = await createUser(email, password);
@@ -83,12 +87,15 @@ describe("User Server Model", () => {
                 email,
             };
 
-            mockDb.user.get.mockResolvedValue(mockUser);
+            mockDb.user.query.mockResolvedValue({
+                Items: [mockUser],
+            });
 
             const result = await getUserByEmail(email);
 
-            expect(mockDb.user.get).toHaveBeenCalledWith({
-                userId: `email#${email}`,
+            expect(mockDb.user.query).toHaveBeenCalledWith({
+                KeyConditionExpression: "userId = :userId",
+                ExpressionAttributeValues: { ":userId": `email#${email}` },
             });
             expect(result).toEqual({
                 id: `email#${email}`,
@@ -97,7 +104,9 @@ describe("User Server Model", () => {
         });
 
         it("should return null when user not found", async () => {
-            mockDb.user.get.mockResolvedValue(null);
+            mockDb.user.query.mockResolvedValue({
+                Items: [],
+            });
 
             const result = await getUserByEmail("nonexistent@example.com");
 
@@ -113,11 +122,16 @@ describe("User Server Model", () => {
                 email: "test@example.com",
             };
 
-            mockDb.user.get.mockResolvedValue(mockUser);
+            mockDb.user.query.mockResolvedValue({
+                Items: [mockUser],
+            });
 
             const result = await getUserById(userId);
 
-            expect(mockDb.user.get).toHaveBeenCalledWith({ userId });
+            expect(mockDb.user.query).toHaveBeenCalledWith({
+                KeyConditionExpression: "userId = :userId",
+                ExpressionAttributeValues: { ":userId": userId },
+            });
             expect(result).toEqual({
                 id: userId,
                 email: "test@example.com",
@@ -125,7 +139,9 @@ describe("User Server Model", () => {
         });
 
         it("should return null when user not found", async () => {
-            mockDb.user.get.mockResolvedValue(null);
+            mockDb.user.query.mockResolvedValue({
+                Items: [],
+            });
 
             const result = await getUserById("email#nonexistent@example.com");
 
@@ -148,9 +164,11 @@ describe("User Server Model", () => {
             (bcrypt.compare as vi.MockedFunction<typeof bcrypt.compare>).mockResolvedValue(true);
 
             // Mock getUserByEmail
-            mockDb.user.get.mockResolvedValue({
-                userId: `email#${email}`,
-                email,
+            mockDb.user.query.mockResolvedValue({
+                Items: [{
+                    userId: `email#${email}`,
+                    email,
+                }],
             });
 
             const result = await verifyLogin(email, password);

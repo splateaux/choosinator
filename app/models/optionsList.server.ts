@@ -68,5 +68,5 @@ export async function deleteOptionsList({
   ownerUserId,
 }: Pick<OptionsList, "id" | "ownerUserId">) {
   const db = await arc.tables();
-  return db.note.delete({ userId: ownerUserId, optionsListId: id });
+  return db.optionsList.delete({ userId: ownerUserId, optionsListId: id });
 }
