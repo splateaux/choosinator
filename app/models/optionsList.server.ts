@@ -2,6 +2,7 @@ import arc from "@architect/functions";
 import { createId } from "@paralleldrive/cuid2";
 
 import { User } from "./user.server";
+import { PerformanceMonitor } from "~/utils/performance";
 
 export interface OptionsList {
   id: ReturnType<typeof createId>;
@@ -13,39 +14,49 @@ export async function getOptionsList({
   id,
   ownerUserId,
 }: Pick<OptionsList, "id" | "ownerUserId">): Promise<OptionsList | null> {
-  const db = await arc.tables();
-  const result = await db.optionsList.get({
-    userId: ownerUserId,
-    optionsListId: id,
-  });
+  return PerformanceMonitor.measureAsync(
+    `DB: getOptionsList(${id})`,
+    async () => {
+      const db = await arc.tables();
+      const result = await db.optionsList.get({
+        userId: ownerUserId,
+        optionsListId: id,
+      });
 
-  if (result) {
-    return {
-      ownerUserId: result.userId,
-      id: result.optionsListId,
-      name: result.name,
-    };
-  }
-  return null;
+      if (result) {
+        return {
+          ownerUserId: result.userId,
+          id: result.optionsListId,
+          name: result.name,
+        };
+      }
+      return null;
+    }
+  );
 }
 
 export async function getOptionsListsByOwner(
   ownerUserId: string,
 ): Promise<OptionsList[]> {
-  const db = await arc.tables();
+  return PerformanceMonitor.measureAsync(
+    `DB: getOptionsListsByOwner(${ownerUserId})`,
+    async () => {
+      const db = await arc.tables();
 
-  const results = await db.optionsList.query({
-    KeyConditionExpression: "userId = :ownerUserId",
-    ExpressionAttributeValues: {
-      ":ownerUserId": ownerUserId,
-    },
-  });
+      const results = await db.optionsList.query({
+        KeyConditionExpression: "userId = :ownerUserId",
+        ExpressionAttributeValues: {
+          ":ownerUserId": ownerUserId,
+        },
+      });
 
-  return results.Items.map((item) => ({
-    id: item.optionsListId,
-    ownerUserId: item.userId,
-    name: item.name,
-  }));
+      return results.Items.map((item) => ({
+        id: item.optionsListId,
+        ownerUserId: item.userId,
+        name: item.name,
+      }));
+    }
+  );
 }
 
 export async function createOptionsList({
