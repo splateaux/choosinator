@@ -26,12 +26,14 @@ A decision-making application built with Remix and AWS serverless architecture. 
 ## Getting Started
 
 1. **Clone the repository**
+
    ```sh
    git clone <your-repo-url>
    cd choosinator
    ```
 
 2. **Install dependencies**
+
    ```sh
    npm install
    ```
@@ -69,6 +71,7 @@ The Choosinator is a decision-making application that helps users create and man
 ### Database Schema:
 
 The application uses DynamoDB with the following tables:
+
 - `user` - User account information
 - `password` - Encrypted user passwords (separate for security)
 - `optionsList` - Lists of options for decision-making
@@ -105,6 +108,7 @@ Prior to your first deployment, you'll need to do a few things:
   If you prefer, you can also use [1password](https://1password.com/password-generator) to generate a random secret, just replace the `$(node -e ...)` part with the generated secret.
 
   After adding environment variables, you'll need to redeploy to apply them:
+
   ```sh
   npx arc deploy --staging
   npx arc deploy --production

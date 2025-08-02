@@ -14,7 +14,10 @@ export async function getOptionsList({
   ownerUserId,
 }: Pick<OptionsList, "id" | "ownerUserId">): Promise<OptionsList | null> {
   const db = await arc.tables();
-  const result = await db.optionsList.get({ userId: ownerUserId, optionsListId: id });
+  const result = await db.optionsList.get({
+    userId: ownerUserId,
+    optionsListId: id,
+  });
 
   if (result) {
     return {
@@ -32,9 +35,9 @@ export async function getOptionsListsByOwner(
   const db = await arc.tables();
 
   const results = await db.optionsList.query({
-    KeyConditionExpression: 'userId = :ownerUserId',
+    KeyConditionExpression: "userId = :ownerUserId",
     ExpressionAttributeValues: {
-      ':ownerUserId': ownerUserId,
+      ":ownerUserId": ownerUserId,
     },
   });
 

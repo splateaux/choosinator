@@ -24,7 +24,7 @@ describe("validateEmail", () => {
 
     // These would pass the simple validation (contains @ and length > 3)
     expect(validateEmail("@domain.com")).toBe(true); // Simple validation allows this
-    expect(validateEmail("user@")).toBe(true); // Simple validation allows this  
+    expect(validateEmail("user@")).toBe(true); // Simple validation allows this
     expect(validateEmail("user@domain")).toBe(true); // Simple validation allows this
   });
 });
@@ -51,17 +51,25 @@ describe("safeRedirect", () => {
     expect(safeRedirect("http://evil.com", "/default")).toBe("/default");
     expect(safeRedirect("https://malicious.site", "/default")).toBe("/default");
     expect(safeRedirect("//evil.com", "/default")).toBe("/default");
-    expect(safeRedirect("javascript:alert('xss')", "/default")).toBe("/default");
+    expect(safeRedirect("javascript:alert('xss')", "/default")).toBe(
+      "/default",
+    );
   });
 
   test("handles URL encoded characters safely", () => {
     expect(safeRedirect("/users%2F123", "/default")).toBe("/users%2F123");
-    expect(safeRedirect("/search?q=test%20query", "/default")).toBe("/search?q=test%20query");
+    expect(safeRedirect("/search?q=test%20query", "/default")).toBe(
+      "/search?q=test%20query",
+    );
   });
 
   test("handles query parameters and fragments", () => {
-    expect(safeRedirect("/dashboard?tab=settings", "/default")).toBe("/dashboard?tab=settings");
+    expect(safeRedirect("/dashboard?tab=settings", "/default")).toBe(
+      "/dashboard?tab=settings",
+    );
     expect(safeRedirect("/page#section", "/default")).toBe("/page#section");
-    expect(safeRedirect("/page?param=value#section", "/default")).toBe("/page?param=value#section");
+    expect(safeRedirect("/page?param=value#section", "/default")).toBe(
+      "/page?param=value#section",
+    );
   });
 });
