@@ -1,9 +1,14 @@
-import { ActionFunctionArgs, json, redirect } from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs, json, redirect } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 
 import { createOptionsList } from "~/models/optionsList.server";
 import { requireUserId } from "~/session.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+    await requireUserId(request);
+    return json({});
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
     const userId = await requireUserId(request);
