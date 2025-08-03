@@ -67,8 +67,8 @@ describe("Options Lists", () => {
       cy.visit("/optionsLists");
 
       // Find and click the specific link (break up chain to prevent DOM detachment issues)
-      cy.get(`a[href*="/optionsLists/"]`).contains(listName).as('targetLink');
-      cy.get('@targetLink').click();
+      cy.get(`a[href*="/optionsLists/"]`).contains(listName).as("targetLink");
+      cy.get("@targetLink").click();
 
       // Wait for navigation and content to load
       cy.url({ timeout: 10000 }).should("include", "/optionsLists/");
@@ -190,8 +190,8 @@ describe("Options Lists", () => {
       // Go back to options lists page and click on the list
       cy.visit("/optionsLists");
 
-      cy.get(`a[href*="/optionsLists/"]`).contains(listName).as('navLink');
-      cy.get('@navLink').click();
+      cy.get(`a[href*="/optionsLists/"]`).contains(listName).as("navLink");
+      cy.get("@navLink").click();
 
       // Wait for navigation to complete
       cy.url({ timeout: 10000 }).should("include", "/optionsLists/");
@@ -224,14 +224,14 @@ describe("Options Lists", () => {
       cy.contains(list2Name, { timeout: 10000 });
 
       // Click on first list and wait for content
-      cy.get(`a[href*="/optionsLists/"]`).contains(list1Name).as('list1Link');
-      cy.get('@list1Link').click();
+      cy.get(`a[href*="/optionsLists/"]`).contains(list1Name).as("list1Link");
+      cy.get("@list1Link").click();
       cy.url({ timeout: 10000 }).should("include", "/optionsLists/");
       cy.get("h3", { timeout: 10000 }).should("contain", list1Name);
 
       // Click on second list and wait for content
-      cy.get(`a[href*="/optionsLists/"]`).contains(list2Name).as('list2Link');
-      cy.get('@list2Link').click();
+      cy.get(`a[href*="/optionsLists/"]`).contains(list2Name).as("list2Link");
+      cy.get("@list2Link").click();
       cy.url({ timeout: 10000 }).should("include", "/optionsLists/");
       cy.get("h3", { timeout: 10000 }).should("contain", list2Name);
     });
