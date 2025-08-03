@@ -110,7 +110,10 @@ export class PersistentOptionsListCache {
           .sort(([, a], [, b]) => b.timestamp - a.timestamp)
           .slice(0, 25);
 
-        const trimmedCache: Record<string, { data: OptionsList; timestamp: number }> = {};
+        const trimmedCache: Record<
+          string,
+          { data: OptionsList; timestamp: number }
+        > = {};
         sorted.forEach(([id, entry]) => {
           trimmedCache[id] = entry;
         });
