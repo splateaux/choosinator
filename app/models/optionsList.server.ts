@@ -1,8 +1,9 @@
 import arc from "@architect/functions";
 import { createId } from "@paralleldrive/cuid2";
 
-import { User } from "./user.server";
 import { PerformanceMonitor } from "~/utils/performance";
+
+import { User } from "./user.server";
 
 export interface OptionsList {
   id: ReturnType<typeof createId>;

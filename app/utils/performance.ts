@@ -3,7 +3,7 @@
  */
 
 export class PerformanceMonitor {
-  private static timers: Map<string, number> = new Map();
+  private static timers = new Map<string, number>();
 
   static startTimer(label: string): void {
     this.timers.set(label, performance.now());
@@ -27,21 +27,19 @@ export class PerformanceMonitor {
     return duration;
   }
 
-  static measureAsync<T>(
+  static async measureAsync<T>(
     label: string,
     operation: () => Promise<T>,
   ): Promise<T> {
-    return new Promise(async (resolve, reject) => {
-      this.startTimer(label);
-      try {
-        const result = await operation();
-        this.endTimer(label);
-        resolve(result);
-      } catch (error) {
-        this.endTimer(label);
-        reject(error);
-      }
-    });
+    this.startTimer(label);
+    try {
+      const result = await operation();
+      this.endTimer(label);
+      return result;
+    } catch (error) {
+      this.endTimer(label);
+      throw error;
+    }
   }
 }
 

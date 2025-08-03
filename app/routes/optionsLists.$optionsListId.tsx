@@ -5,8 +5,8 @@ import {
   useLoaderData,
   useRouteError,
 } from "@remix-run/react";
-import invariant from "tiny-invariant";
 import { useEffect } from "react";
+import invariant from "tiny-invariant";
 
 import { getOptionsList } from "~/models/optionsList.server";
 import { requireUserId } from "~/session.server";
@@ -38,7 +38,7 @@ export default function OptionsListDetailsPage() {
     <div>
       <h3 className="text-2xl font-bold">{data.optionsList.name}</h3>
       <hr className="my-4" />
-      {process.env.NODE_ENV === "development" && (
+      {process.env.NODE_ENV === "development" ? (
         <details className="mt-4 text-xs text-gray-500">
           <summary>🔍 Debug Info</summary>
           <pre className="mt-2 bg-gray-100 p-2 rounded">
@@ -49,7 +49,7 @@ export default function OptionsListDetailsPage() {
             Loaded at: {new Date().toISOString()}
           </pre>
         </details>
-      )}
+      ) : null}
     </div>
   );
 }

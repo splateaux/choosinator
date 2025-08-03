@@ -11,7 +11,7 @@ interface CacheEntry {
 }
 
 export class OptionsListCache {
-  private static cache: Map<string, CacheEntry> = new Map();
+  private static cache = new Map<string, CacheEntry>();
   private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   static set(optionsList: OptionsList): void {
@@ -110,7 +110,7 @@ export class PersistentOptionsListCache {
           .sort(([, a], [, b]) => b.timestamp - a.timestamp)
           .slice(0, 25);
 
-        const trimmedCache: Record<string, any> = {};
+        const trimmedCache: Record<string, { data: OptionsList; timestamp: number }> = {};
         sorted.forEach(([id, entry]) => {
           trimmedCache[id] = entry;
         });
