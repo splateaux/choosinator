@@ -35,8 +35,7 @@ export default function OptionsListsPage() {
                   <li key={optionList.id}>
                     <NavLink
                       className={({ isActive }) =>
-                        `block border-b p-4 text-xl ${
-                          isActive ? "bg-white" : ""
+                        `block border-b p-4 text-xl ${isActive ? "bg-white" : ""
                         }`
                       }
                       to={`/optionsLists/${optionList.id}`}
