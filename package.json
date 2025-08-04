@@ -5,15 +5,16 @@
   "type": "module",
   "scripts": {
     "build": "remix build",
-    "dev": "remix dev --manual -c \"arc sandbox -e testing\"",
+    "dev": "remix dev --manual -c 'arc sandbox -e testing'",
+    "dev:auto": "PORT=${PORT:-3333} arc sandbox",
     "format": "prettier --write .",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "cross-env NODE_ENV=production arc sandbox",
     "test": "vitest",
-    "test:e2e:dev": "start-server-and-test dev http://localhost:3333 \"npx cypress open\"",
-    "test:e2e:run": "cross-env PORT=8811 start-server-and-test dev http://localhost:8811 \"npx cypress run\"",
+    "test:e2e:open": "cross-env PORT=8811 start-server-and-test dev:auto http://localhost:8811 'npx cypress open'",
+    "test:e2e:run": "cross-env PORT=8811 start-server-and-test dev:auto http://localhost:8811 'npx cypress run'",
     "typecheck": "tsc && tsc -p cypress",
-    "validate": "run-p \"test -- --run\" lint typecheck test:e2e:run",
+    "validate": "run-p 'test -- --run' lint typecheck test:e2e:run",
     "prepare": "husky"
   },
   "dependencies": {
