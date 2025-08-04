@@ -114,7 +114,7 @@ Prior to your first deployment, you'll need to do a few things:
   npx arc deploy --production
   ```
 
-## Where do I find my CloudFormation?
+## Where do I find my CloudFormation? 
 
 You can find the CloudFormation template that Architect generated for you in the sam.yaml file.
 
