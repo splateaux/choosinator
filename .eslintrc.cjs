@@ -129,6 +129,7 @@ module.exports = {
         "plugin-remix.js",
         "remix.config.js",
         "mocks/**/*.js",
+        "scripts/**/*.js",
       ],
       env: {
         node: true,

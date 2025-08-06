@@ -6,7 +6,7 @@ test.describe("Options Lists", () => {
     // Create a user and login before each test
     // Each test gets a fresh user for isolation
     const email = `${faker.internet.userName()}@example.com`;
-    await page.request.post("/__tests/create-user", { data: { email } });
+    await page.request.post("/tests/create-user", { data: { email } });
     await page.goto("/");
 
     // Note: If you want to see data between tests, you could use a shared email:

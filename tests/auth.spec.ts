@@ -84,7 +84,7 @@ test.describe("Authentication", () => {
       const email = `${faker.internet.userName()}@example.com`;
 
       // Create user and login
-      await page.request.post("/__tests/create-user", { data: { email } });
+      await page.request.post("/tests/create-user", { data: { email } });
       await page.goto("/");
 
       await page.getByRole("button", { name: /log out/i }).click();

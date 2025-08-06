@@ -16,8 +16,8 @@
     "test:playwright": "playwright test",
     "test:playwright:headed": "playwright test --headed",
     "test:playwright:debug": "playwright test --debug",
-    "test:e2e": "start-server-and-test dev:auto http://localhost:3333 'playwright test'",
-    "test:e2e:debug": "start-server-and-test dev:auto http://localhost:3333 'playwright test --headed --ui'",
+    "test:e2e": "start-server-and-test 'PORT=3334 npm run dev:auto' http://localhost:3334 'playwright test'",
+    "test:e2e:debug": "start-server-and-test 'PORT=3334 npm run dev:auto' http://localhost:3334 'playwright test --headed --ui'",
     "validate": "run-p 'test -- --run' lint typecheck test:e2e",
     "prepare": "husky",
     "typecheck": "tsc"
