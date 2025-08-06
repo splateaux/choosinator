@@ -65,12 +65,15 @@ This starts your app in development mode, rebuilding assets on file changes.
 For faster local development, you can use these options:
 
 1. **Auto-setup with default user** (recommended):
+
    ```sh
    npm run dev:with-user
    ```
+
    This creates a default user (`dev@example.com` / `devpassword123`) and starts the server.
 
 2. **Manual setup**:
+
    ```sh
    npm run dev:setup  # Creates default user
    npm run dev:auto   # Starts server
