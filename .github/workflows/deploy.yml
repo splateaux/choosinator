@@ -83,6 +83,10 @@ jobs:
   playwright:
     name: 🎭 Playwright
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: "test"
+      SESSION_SECRET: "test-session-secret-for-ci"
+      ARC_APP_SECRET: "test-arc-app-secret-for-ci"
     steps:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
@@ -107,7 +111,11 @@ jobs:
         run: npm run build
 
       - name: 🎭 Playwright run
-        run: npm run test:e2e
+        run: |
+          echo "NODE_ENV: $NODE_ENV"
+          echo "SESSION_SECRET: $SESSION_SECRET"
+          echo "ARC_APP_SECRET: $ARC_APP_SECRET"
+          npm run test:e2e
         env:
           PORT: "3333"
 
