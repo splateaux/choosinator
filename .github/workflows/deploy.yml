@@ -80,8 +80,8 @@ jobs:
       - name: ⚡ Run vitest
         run: npm run test -- --coverage
 
-  cypress:
-    name: ⚫️ Cypress
+  playwright:
+    name: 🎭 Playwright
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout repo
@@ -103,16 +103,13 @@ jobs:
       - name: 🏗 Build
         run: npm run build
 
-      - name: 🌳 Cypress run
-        uses: cypress-io/github-action@v6
-        with:
-          start: npm run dev
-          wait-on: "http://localhost:8811"
+      - name: 🎭 Playwright run
+        run: npm run test:e2e
         env:
-          PORT: "8811"
+          PORT: "3333"
 
   deploy:
-    needs: [lint, typecheck, vitest, cypress]
+    needs: [lint, typecheck, vitest, playwright]
     runs-on: ubuntu-latest
 
     steps:

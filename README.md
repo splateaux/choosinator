@@ -10,7 +10,7 @@ A decision-making application built with Remix and AWS serverless architecture. 
 - Email/Password Authentication with [cookie-based sessions](https://remix.run/utils/sessions#createcookiesessionstorage)
 - DynamoDB access via [`arc.tables`](https://arc.codes/docs/en/reference/runtime-helpers/node.js#arc.tables)
 - Styling with [Tailwind](https://tailwindcss.com/)
-- End-to-end testing with [Cypress](https://cypress.io)
+- End-to-end testing with [Playwright](https://playwright.dev)
 - Local third party request mocking with [MSW](https://mswjs.io)
 - Unit testing with [Vitest](https://vitest.dev) and [Testing Library](https://testing-library.com)
 - Code formatting with [Prettier](https://prettier.io)
@@ -126,18 +126,16 @@ We use GitHub Actions for continuous integration and deployment. Anything that g
 
 ## Testing
 
-### Cypress
+### Playwright
 
-We use Cypress for our End-to-End tests in this project. You'll find those in the `cypress` directory. As you make changes, add to an existing file or create a new file in the `cypress/e2e` directory to test your changes.
+We use Playwright for our End-to-End tests in this project. You'll find those in the `tests` directory. As you make changes, add to an existing file or create a new file in the `tests` directory to test your changes.
 
-We use [`@testing-library/cypress`](https://testing-library.com/cypress) for selecting elements on the page semantically.
-
-To run these tests in development, run `npm run test:e2e:dev` which will start the dev server for the app as well as the Cypress client.
+To run these tests in development, run `npm run test:e2e` which will start the dev server for the app and run the Playwright tests.
 
 We have a utility for testing authenticated features without having to go through the login flow:
 
 ```ts
-cy.login();
+await page.request.post('/__tests/create-user', { data: { email } });
 // you are now logged in as a new user
 ```
 

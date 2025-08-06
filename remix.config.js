@@ -18,7 +18,7 @@ export default {
 
       route(
         "__tests/create-user",
-        path.relative(appDir, "cypress/support/test-routes/create-user.ts"),
+        path.relative(appDir, "tests/support/test-routes/create-user.ts"),
       );
     }),
 };
