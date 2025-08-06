@@ -17,8 +17,13 @@ export default {
       const appDir = path.join(process.cwd(), "app");
 
       route(
-        "__tests/create-user",
+        "tests/create-user",
         path.relative(appDir, "tests/support/test-routes/create-user.ts"),
+      );
+
+      route(
+        "dev-auto-login",
+        path.relative(appDir, "app/routes/dev-auto-login.tsx"),
       );
     }),
 };
