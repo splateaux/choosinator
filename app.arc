@@ -27,10 +27,6 @@ user
 password
   userId *String
 
-note
-  userId *String 
-  noteId **String
-
 optionsList
   userId *String
   optionsListId **String 

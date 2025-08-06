@@ -98,7 +98,7 @@ export default function LoginPage() {
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus={true}
                 name="email"
-                type="email"
+                type="text"
                 autoComplete="email"
                 aria-invalid={actionData?.errors?.email ? true : undefined}
                 aria-describedby="email-error"

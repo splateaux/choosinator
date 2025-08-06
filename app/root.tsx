@@ -15,6 +15,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 
 import { getUser } from "~/session.server";
 import stylesheet from "~/tailwind.css";
+import { trackWebVitals } from "~/utils/performance";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -65,6 +66,11 @@ export default function App() {
     const storedTheme = localStorage.getItem("theme") || "light-mode";
     setTheme(storedTheme);
     document.body.className = storedTheme;
+
+    // Initialize performance tracking in development
+    if (process.env.NODE_ENV === "development") {
+      trackWebVitals();
+    }
   }, []);
 
   const toggleTheme = () => {

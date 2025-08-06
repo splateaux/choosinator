@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+# Fast pre-commit hook - just format code
+echo "🎨 Formatting code..."
+npm run format
+
+echo "✅ Code formatted and ready to commit!"

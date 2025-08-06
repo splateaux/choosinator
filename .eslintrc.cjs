@@ -116,13 +116,10 @@ module.exports = {
           version: 28,
         },
       },
-    },
-
-    // Cypress
-    {
-      files: ["cypress/**/*.ts"],
-      plugins: ["cypress"],
-      extends: ["plugin:cypress/recommended", "prettier"],
+      rules: {
+        // Allow any types in test files for mocking
+        "@typescript-eslint/no-explicit-any": "off",
+      },
     },
 
     // Node

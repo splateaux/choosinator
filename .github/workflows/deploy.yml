@@ -80,9 +80,13 @@ jobs:
       - name: ⚡ Run vitest
         run: npm run test -- --coverage
 
-  cypress:
-    name: ⚫️ Cypress
+  playwright:
+    name: 🎭 Playwright
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: "test"
+      SESSION_SECRET: "test-session-secret-for-ci"
+      ARC_APP_SECRET: "test-arc-app-secret-for-ci"
     steps:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
@@ -100,19 +104,23 @@ jobs:
       - name: 📥 Install deps
         run: npm install
 
+      - name: 🎭 Install Playwright browsers
+        run: npx playwright install --with-deps
+
       - name: 🏗 Build
         run: npm run build
 
-      - name: 🌳 Cypress run
-        uses: cypress-io/github-action@v6
-        with:
-          start: npm run dev
-          wait-on: "http://localhost:8811"
+      - name: 🎭 Playwright run
+        run: |
+          echo "NODE_ENV: $NODE_ENV"
+          echo "SESSION_SECRET: $SESSION_SECRET"
+          echo "ARC_APP_SECRET: $ARC_APP_SECRET"
+          npm run test:e2e
         env:
-          PORT: "8811"
+          PORT: "3333"
 
   deploy:
-    needs: [lint, typecheck, vitest, cypress]
+    needs: [lint, typecheck, vitest, playwright]
     runs-on: ubuntu-latest
 
     steps:
