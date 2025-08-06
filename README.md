@@ -135,7 +135,7 @@ To run these tests in development, run `npm run test:e2e` which will start the d
 We have a utility for testing authenticated features without having to go through the login flow:
 
 ```ts
-await page.request.post('/__tests/create-user', { data: { email } });
+await page.request.post("/__tests/create-user", { data: { email } });
 // you are now logged in as a new user
 ```
 
