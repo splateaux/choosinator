@@ -62,29 +62,28 @@ This starts your app in development mode, rebuilding assets on file changes.
 
 ### Quick Development Login
 
-For faster local development, you can use these options:
+Local users are auto-seeded via Architect Sandbox when the dev server starts.
 
-1. **Auto-setup with default user** (recommended):
+```sh
+npm run dev
+```
 
-   ```sh
-   npm run dev:with-user
-   ```
+Two users are created for you automatically:
 
-   This creates a default user (`dev@example.com` / `devpassword123`) and starts the server.
+- `dev@example.com` / `devpassword123`
+- `dev2@example.com` / `devpassword123`
 
-2. **Manual setup**:
+To change the seed data, edit `sandbox-seed.json`. To change the password, generate a new bcrypt hash and update the `password` entries:
 
-   ```sh
-   npm run dev:setup  # Creates default user
-   npm run dev:auto   # Starts server
-   ```
+```sh
+node -e "console.log(require('bcryptjs').hashSync('your-new-password', 10))"
+```
 
-3. **Quick login page**: Visit `http://localhost:3333/dev-auto-login` in your browser for instant login.
+If you need to create users programmatically in tests, you can still use the existing test route:
 
-4. **Existing test route**: Use the existing test route for programmatic user creation:
-   ```ts
-   await page.request.post("/tests/create-user", { data: { email } });
-   ```
+```ts
+await page.request.post("/tests/create-user", { data: { email } });
+```
 
 ### Application Features:
 
@@ -93,16 +92,48 @@ The Choosinator is a decision-making application that helps users create and man
 - **User Management**: Creating users, logging in and out [./app/models/user.server.ts](./app/models/user.server.ts)
 - **Session Management**: User sessions and authentication [./app/session.server.ts](./app/session.server.ts)
 - **Options Lists**: Creating and managing decision-making lists [./app/models/optionsList.server.ts](./app/models/optionsList.server.ts)
+- **List Sharing**: Share lists with other users and manage sharing permissions [./app/models/optionsListSharing.server.ts](./app/models/optionsListSharing.server.ts)
 
 ### Database Schema:
 
 The application uses DynamoDB with the following tables:
 
-- `user` - User account information
-- `password` - Encrypted user passwords (separate for security)
-- `optionsList` - Lists of options for decision-making
+- `user` - User accounts and authentication
+- `password` - Hashed passwords for user authentication
+- `optionsList` - Decision-making lists created by users
 - `option` - Individual options within lists
 - `optionsListSharing` - Sharing permissions for lists
+
+## List Sharing Feature
+
+The Choosinator supports sharing lists with other users. Here's how it works:
+
+### For List Owners:
+
+- **Share Lists**: Enter an email address to share your list with another user
+- **Manage Sharing**: View all users who have access to your list and remove access as needed
+- **Visual Indicators**: Shared lists are clearly marked in the interface
+
+### For Shared Users:
+
+- **View Shared Lists**: Access lists shared with you in the "Shared with Me" section
+- **Modify Lists**: Edit and modify lists that have been shared with you
+- **Clear Attribution**: See who originally created the list
+
+### How to Share:
+
+1. Navigate to any list you own
+2. Look for the "Share List" section
+3. Enter the email address of the user you want to share with
+4. Click "Share" to grant access
+5. The user will now see the list in their "Shared with Me" section
+
+### Security Features:
+
+- Only list owners can share or unshare lists
+- Users cannot share lists with themselves
+- Users must exist in the system to be shared with
+- Clear visual distinction between owned and shared lists
 
 The database that comes with `arc sandbox` is an in memory database, so if you restart the server, you'll lose your data. The Staging and Production environments won't behave this way, instead they'll persist the data in DynamoDB between deployments and Lambda executions.
 
