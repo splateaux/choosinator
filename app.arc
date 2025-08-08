@@ -38,3 +38,12 @@ option
 optionsListSharing
   userId *String 
   optionsListId **String
+  sharedWithUserId String
+  createdAt String
+
+@indexes
+optionsList
+  optionsListId *String
+
+optionsListSharing
+  sharedWithUserId *String
