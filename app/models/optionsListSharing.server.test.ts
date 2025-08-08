@@ -8,9 +8,19 @@ interface SharingRow {
   createdAt: string;
 }
 
-interface UserRow { userId: string; email: string }
-interface PasswordRow { userId: string; password: string }
-interface OptionsListRow { userId: string; optionsListId: string; name: string }
+interface UserRow {
+  userId: string;
+  email: string;
+}
+interface PasswordRow {
+  userId: string;
+  password: string;
+}
+interface OptionsListRow {
+  userId: string;
+  optionsListId: string;
+  name: string;
+}
 
 let sharingRows: SharingRow[] = [];
 let userRows: UserRow[] = [];
@@ -56,8 +66,16 @@ vi.mock("@architect/functions", () => {
             optionsListRows.push(item);
             return item;
           },
-          get: async ({ userId, optionsListId }: { userId: string; optionsListId: string }) => {
-            const Item = optionsListRows.find((r) => r.userId === userId && r.optionsListId === optionsListId);
+          get: async ({
+            userId,
+            optionsListId,
+          }: {
+            userId: string;
+            optionsListId: string;
+          }) => {
+            const Item = optionsListRows.find(
+              (r) => r.userId === userId && r.optionsListId === optionsListId,
+            );
             return Item ?? null;
           },
           query: async (params: any) => {
@@ -65,7 +83,9 @@ vi.mock("@architect/functions", () => {
             if (params.IndexName === "optionsListId-index") {
               const v = params.ExpressionAttributeValues[":optionsListId"];
               Items = Items.filter((r) => r.optionsListId === v);
-            } else if (params.KeyConditionExpression?.includes("userId = :ownerUserId")) {
+            } else if (
+              params.KeyConditionExpression?.includes("userId = :ownerUserId")
+            ) {
               const v = params.ExpressionAttributeValues[":ownerUserId"];
               Items = Items.filter((r) => r.userId === v);
             }
@@ -77,8 +97,17 @@ vi.mock("@architect/functions", () => {
             sharingRows.push(item);
             return item;
           },
-          delete: async ({ userId, optionsListId }: { userId: string; optionsListId: string }) => {
-            sharingRows = sharingRows.filter((r) => !(r.userId === userId && r.optionsListId === optionsListId));
+          delete: async ({
+            userId,
+            optionsListId,
+          }: {
+            userId: string;
+            optionsListId: string;
+          }) => {
+            sharingRows = sharingRows.filter(
+              (r) =>
+                !(r.userId === userId && r.optionsListId === optionsListId),
+            );
             return {} as any;
           },
           query: async (params: any) => {
@@ -87,15 +116,25 @@ vi.mock("@architect/functions", () => {
               const v = params.ExpressionAttributeValues[":sharedWithUserId"];
               Items = Items.filter((r) => r.sharedWithUserId === v);
             }
-            if (params.KeyConditionExpression?.includes("userId = :ownerUserId")) {
+            if (
+              params.KeyConditionExpression?.includes("userId = :ownerUserId")
+            ) {
               const v = params.ExpressionAttributeValues[":ownerUserId"];
               Items = Items.filter((r) => r.userId === v);
             }
-            if (params.FilterExpression?.includes("optionsListId = :optionsListId")) {
+            if (
+              params.FilterExpression?.includes(
+                "optionsListId = :optionsListId",
+              )
+            ) {
               const v = params.ExpressionAttributeValues[":optionsListId"];
               Items = Items.filter((r) => r.optionsListId === v);
             }
-            if (params.FilterExpression?.includes("sharedWithUserId = :sharedWithUserId")) {
+            if (
+              params.FilterExpression?.includes(
+                "sharedWithUserId = :sharedWithUserId",
+              )
+            ) {
               const v = params.ExpressionAttributeValues[":sharedWithUserId"];
               Items = Items.filter((r) => r.sharedWithUserId === v);
             }
@@ -124,8 +163,15 @@ vi.mock("./user.server", () => {
 
 vi.mock("./optionsList.server", () => {
   return {
-    createOptionsList: async ({ name, ownerUserId }: { name: string; ownerUserId: string }) => {
-      const optionsListId = `options_${Math.random().toString(36).slice(2, 10)}` as const;
+    createOptionsList: async ({
+      name,
+      ownerUserId,
+    }: {
+      name: string;
+      ownerUserId: string;
+    }) => {
+      const optionsListId =
+        `options_${Math.random().toString(36).slice(2, 10)}` as const;
       optionsListRows.push({ userId: ownerUserId, optionsListId, name });
       return { id: optionsListId, name, ownerUserId };
     },
@@ -270,8 +316,8 @@ describe("OptionsListSharing", () => {
       ownerUserId: owner.id,
     });
     expect(nowShared).toHaveLength(2);
-    expect(nowShared.map(u => u.email)).toContain(sharedUser1.email);
-    expect(nowShared.map(u => u.email)).toContain(sharedUser2.email);
+    expect(nowShared.map((u) => u.email)).toContain(sharedUser1.email);
+    expect(nowShared.map((u) => u.email)).toContain(sharedUser2.email);
   });
 
   test("should unshare a list", async () => {
@@ -313,4 +359,4 @@ describe("OptionsListSharing", () => {
     });
     expect(isStillShared).toBe(false);
   });
-}); 
+});

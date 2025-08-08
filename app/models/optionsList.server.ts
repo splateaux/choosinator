@@ -62,7 +62,9 @@ export async function getOptionsListForUser({
       }
 
       // If not found as owner, check if shared
-      const { isOptionsListSharedWithUser } = await import("./optionsListSharing.server");
+      const { isOptionsListSharedWithUser } = await import(
+        "./optionsListSharing.server"
+      );
       const isShared = await isOptionsListSharedWithUser({
         optionsListId: id,
         sharedWithUserId: userId,
@@ -129,7 +131,9 @@ export async function getOptionsListsForUser(
       // Get shared lists - handle case where table doesn't exist yet
       const shared: OptionsList[] = [];
       try {
-        const { getSharedOptionsListsForUser } = await import("./optionsListSharing.server");
+        const { getSharedOptionsListsForUser } = await import(
+          "./optionsListSharing.server"
+        );
         const sharedSharingRecords = await getSharedOptionsListsForUser(userId);
 
         for (const sharingRecord of sharedSharingRecords) {

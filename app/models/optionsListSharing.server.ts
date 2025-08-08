@@ -7,71 +7,78 @@ import { OptionsList } from "./optionsList.server";
 import { User } from "./user.server";
 
 export interface OptionsListSharing {
-    id: ReturnType<typeof createId>;
-    optionsListId: OptionsList["id"];
-    ownerUserId: User["id"];
-    sharedWithUserId: User["id"];
-    createdAt: string;
+  id: ReturnType<typeof createId>;
+  optionsListId: OptionsList["id"];
+  ownerUserId: User["id"];
+  sharedWithUserId: User["id"];
+  createdAt: string;
 }
 
 export async function shareOptionsList({
-    optionsListId,
-    ownerUserId,
-    sharedWithUserId,
-}: Pick<OptionsListSharing, "optionsListId" | "ownerUserId" | "sharedWithUserId">): Promise<OptionsListSharing> {
-    return PerformanceMonitor.measureAsync(
-        `DB: shareOptionsList(${optionsListId}, ${sharedWithUserId})`,
-        async () => {
-            const db = await arc.tables();
+  optionsListId,
+  ownerUserId,
+  sharedWithUserId,
+}: Pick<
+  OptionsListSharing,
+  "optionsListId" | "ownerUserId" | "sharedWithUserId"
+>): Promise<OptionsListSharing> {
+  return PerformanceMonitor.measureAsync(
+    `DB: shareOptionsList(${optionsListId}, ${sharedWithUserId})`,
+    async () => {
+      const db = await arc.tables();
 
-            const result = await db.optionsListSharing.put({
-                userId: ownerUserId,
-                optionsListId: optionsListId,
-                sharedWithUserId: sharedWithUserId,
-                createdAt: new Date().toISOString(),
-            });
+      const result = await db.optionsListSharing.put({
+        userId: ownerUserId,
+        optionsListId: optionsListId,
+        sharedWithUserId: sharedWithUserId,
+        createdAt: new Date().toISOString(),
+      });
 
-            return {
-                id: createId(),
-                optionsListId: result.optionsListId,
-                ownerUserId: result.userId,
-                sharedWithUserId: result.sharedWithUserId,
-                createdAt: result.createdAt,
-            };
-        },
-    );
+      return {
+        id: createId(),
+        optionsListId: result.optionsListId,
+        ownerUserId: result.userId,
+        sharedWithUserId: result.sharedWithUserId,
+        createdAt: result.createdAt,
+      };
+    },
+  );
 }
 
 export async function unshareOptionsList({
-    optionsListId,
-    ownerUserId,
-    sharedWithUserId,
-}: Pick<OptionsListSharing, "optionsListId" | "ownerUserId" | "sharedWithUserId">): Promise<void> {
-    return PerformanceMonitor.measureAsync(
-        `DB: unshareOptionsList(${optionsListId}, ${sharedWithUserId})`,
-        async () => {
-            const db = await arc.tables();
+  optionsListId,
+  ownerUserId,
+  sharedWithUserId,
+}: Pick<
+  OptionsListSharing,
+  "optionsListId" | "ownerUserId" | "sharedWithUserId"
+>): Promise<void> {
+  return PerformanceMonitor.measureAsync(
+    `DB: unshareOptionsList(${optionsListId}, ${sharedWithUserId})`,
+    async () => {
+      const db = await arc.tables();
 
-            // Find the sharing record and delete it
-            const results = await db.optionsListSharing.query({
-                KeyConditionExpression: "userId = :ownerUserId",
-                FilterExpression: "optionsListId = :optionsListId AND sharedWithUserId = :sharedWithUserId",
-                ExpressionAttributeValues: {
-                    ":ownerUserId": ownerUserId,
-                    ":optionsListId": optionsListId,
-                    ":sharedWithUserId": sharedWithUserId,
-                },
-            });
-
-            if (results.Items.length > 0) {
-                const sharingRecord = results.Items[0];
-                await db.optionsListSharing.delete({
-                    userId: sharingRecord.userId,
-                    optionsListId: sharingRecord.optionsListId,
-                });
-            }
+      // Find the sharing record and delete it
+      const results = await db.optionsListSharing.query({
+        KeyConditionExpression: "userId = :ownerUserId",
+        FilterExpression:
+          "optionsListId = :optionsListId AND sharedWithUserId = :sharedWithUserId",
+        ExpressionAttributeValues: {
+          ":ownerUserId": ownerUserId,
+          ":optionsListId": optionsListId,
+          ":sharedWithUserId": sharedWithUserId,
         },
-    );
+      });
+
+      if (results.Items.length > 0) {
+        const sharingRecord = results.Items[0];
+        await db.optionsListSharing.delete({
+          userId: sharingRecord.userId,
+          optionsListId: sharingRecord.optionsListId,
+        });
+      }
+    },
+  );
 }
 
 export async function getSharedOptionsListsForUser(
@@ -102,41 +109,46 @@ export async function getSharedOptionsListsForUser(
 }
 
 export async function getSharedUsersForOptionsList({
-    optionsListId,
-    ownerUserId,
+  optionsListId,
+  ownerUserId,
 }: Pick<OptionsListSharing, "optionsListId" | "ownerUserId">): Promise<User[]> {
-    return PerformanceMonitor.measureAsync(
-        `DB: getSharedUsersForOptionsList(${optionsListId})`,
-        async () => {
-            const db = await arc.tables();
+  return PerformanceMonitor.measureAsync(
+    `DB: getSharedUsersForOptionsList(${optionsListId})`,
+    async () => {
+      const db = await arc.tables();
 
-            const results = await db.optionsListSharing.query({
-                KeyConditionExpression: "userId = :ownerUserId",
-                FilterExpression: "optionsListId = :optionsListId",
-                ExpressionAttributeValues: {
-                    ":ownerUserId": ownerUserId,
-                    ":optionsListId": optionsListId,
-                },
-            });
-
-            // Get user details for each shared user
-            const sharedUsers: User[] = [];
-            for (const item of results.Items) {
-                const user = await import("./user.server").then(m => m.getUserById(item.sharedWithUserId));
-                if (user) {
-                    sharedUsers.push(user);
-                }
-            }
-
-            return sharedUsers;
+      const results = await db.optionsListSharing.query({
+        KeyConditionExpression: "userId = :ownerUserId",
+        FilterExpression: "optionsListId = :optionsListId",
+        ExpressionAttributeValues: {
+          ":ownerUserId": ownerUserId,
+          ":optionsListId": optionsListId,
         },
-    );
+      });
+
+      // Get user details for each shared user
+      const sharedUsers: User[] = [];
+      for (const item of results.Items) {
+        const user = await import("./user.server").then((m) =>
+          m.getUserById(item.sharedWithUserId),
+        );
+        if (user) {
+          sharedUsers.push(user);
+        }
+      }
+
+      return sharedUsers;
+    },
+  );
 }
 
 export async function isOptionsListSharedWithUser({
   optionsListId,
   sharedWithUserId,
-}: Pick<OptionsListSharing, "optionsListId" | "sharedWithUserId">): Promise<boolean> {
+}: Pick<
+  OptionsListSharing,
+  "optionsListId" | "sharedWithUserId"
+>): Promise<boolean> {
   return PerformanceMonitor.measureAsync(
     `DB: isOptionsListSharedWithUser(${optionsListId}, ${sharedWithUserId})`,
     async () => {
@@ -155,4 +167,4 @@ export async function isOptionsListSharedWithUser({
       return results.Items.length > 0;
     },
   );
-} 
+}

@@ -1,22 +1,22 @@
 {
-    "user": [
-        {
-            "userId": "email#dev@example.com",
-            "email": "dev@example.com"
-        },
-        {
-            "userId": "email#dev2@example.com",
-            "email": "dev2@example.com"
-        }
-    ],
-    "password": [
-        {
-            "userId": "email#dev@example.com",
-            "password": "$2b$10$ptHVPpjtV0TIuxS7Jt2qDuBlQ1fYje7Z5SQvDo.7fqAcZ0KPExHES"
-        },
-        {
-            "userId": "email#dev2@example.com",
-            "password": "$2b$10$ptHVPpjtV0TIuxS7Jt2qDuBlQ1fYje7Z5SQvDo.7fqAcZ0KPExHES"
-        }
-    ]
+  "user": [
+    {
+      "userId": "email#dev@example.com",
+      "email": "dev@example.com"
+    },
+    {
+      "userId": "email#dev2@example.com",
+      "email": "dev2@example.com"
+    }
+  ],
+  "password": [
+    {
+      "userId": "email#dev@example.com",
+      "password": "$2b$10$ptHVPpjtV0TIuxS7Jt2qDuBlQ1fYje7Z5SQvDo.7fqAcZ0KPExHES"
+    },
+    {
+      "userId": "email#dev2@example.com",
+      "password": "$2b$10$ptHVPpjtV0TIuxS7Jt2qDuBlQ1fYje7Z5SQvDo.7fqAcZ0KPExHES"
+    }
+  ]
 }

@@ -80,9 +80,10 @@ node -e "console.log(require('bcryptjs').hashSync('your-new-password', 10))"
 ```
 
 If you need to create users programmatically in tests, you can still use the existing test route:
-   ```ts
-   await page.request.post("/tests/create-user", { data: { email } });
-   ```
+
+```ts
+await page.request.post("/tests/create-user", { data: { email } });
+```
 
 ### Application Features:
 
@@ -98,7 +99,7 @@ The Choosinator is a decision-making application that helps users create and man
 The application uses DynamoDB with the following tables:
 
 - `user` - User accounts and authentication
-- `password` - Hashed passwords for user authentication  
+- `password` - Hashed passwords for user authentication
 - `optionsList` - Decision-making lists created by users
 - `option` - Individual options within lists
 - `optionsListSharing` - Sharing permissions for lists
@@ -108,16 +109,19 @@ The application uses DynamoDB with the following tables:
 The Choosinator supports sharing lists with other users. Here's how it works:
 
 ### For List Owners:
+
 - **Share Lists**: Enter an email address to share your list with another user
 - **Manage Sharing**: View all users who have access to your list and remove access as needed
 - **Visual Indicators**: Shared lists are clearly marked in the interface
 
 ### For Shared Users:
+
 - **View Shared Lists**: Access lists shared with you in the "Shared with Me" section
 - **Modify Lists**: Edit and modify lists that have been shared with you
 - **Clear Attribution**: See who originally created the list
 
 ### How to Share:
+
 1. Navigate to any list you own
 2. Look for the "Share List" section
 3. Enter the email address of the user you want to share with
@@ -125,6 +129,7 @@ The Choosinator supports sharing lists with other users. Here's how it works:
 5. The user will now see the list in their "Shared with Me" section
 
 ### Security Features:
+
 - Only list owners can share or unshare lists
 - Users cannot share lists with themselves
 - Users must exist in the system to be shared with

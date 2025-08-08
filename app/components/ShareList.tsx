@@ -8,7 +8,10 @@ interface ShareListProps {
   sharedUsers: User[];
 }
 
-export default function ShareList({ optionsListId, sharedUsers }: ShareListProps) {
+export default function ShareList({
+  optionsListId,
+  sharedUsers,
+}: ShareListProps) {
   const actionData = useActionData<{ error?: string; success?: string }>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -32,7 +35,10 @@ export default function ShareList({ optionsListId, sharedUsers }: ShareListProps
         <input type="hidden" name="optionsListId" value={optionsListId} />
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
             Share with (email address)
           </label>
           <div className="mt-1 flex gap-2">
@@ -73,15 +79,28 @@ export default function ShareList({ optionsListId, sharedUsers }: ShareListProps
       {/* Currently shared users */}
       {sharedUsers.length > 0 ? (
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Shared with:</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Shared with:
+          </h4>
           <ul className="space-y-2">
             {sharedUsers.map((user) => (
-              <li key={user.id} className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2">
+              <li
+                key={user.id}
+                className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2"
+              >
                 <span className="text-sm text-gray-900">{user.email}</span>
                 <Form method="post" className="inline">
                   <input type="hidden" name="action" value="unshare" />
-                  <input type="hidden" name="optionsListId" value={optionsListId} />
-                  <input type="hidden" name="sharedWithUserId" value={user.id} />
+                  <input
+                    type="hidden"
+                    name="optionsListId"
+                    value={optionsListId}
+                  />
+                  <input
+                    type="hidden"
+                    name="sharedWithUserId"
+                    value={user.id}
+                  />
                   <button
                     type="submit"
                     className="text-sm text-red-600 hover:text-red-800 focus:outline-none"
@@ -96,4 +115,4 @@ export default function ShareList({ optionsListId, sharedUsers }: ShareListProps
       ) : null}
     </div>
   );
-} 
+}

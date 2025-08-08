@@ -2,7 +2,10 @@ import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { Link, NavLink, Outlet, useLoaderData } from "@remix-run/react";
 
 import Layout from "~/components/Layout";
-import { getOptionsListsByOwner, type OptionsList } from "~/models/optionsList.server";
+import {
+  getOptionsListsByOwner,
+  type OptionsList,
+} from "~/models/optionsList.server";
 import { requireUserId } from "~/session.server";
 import { useUser } from "~/utils";
 
@@ -19,7 +22,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function OptionsListsPage() {
   const data = useLoaderData<typeof loader>();
   const user = useUser();
-
 
   return (
     <Layout user={user}>

@@ -9,8 +9,15 @@ import { useEffect } from "react";
 import invariant from "tiny-invariant";
 
 import ShareList from "~/components/ShareList";
-import { getOptionsList, getOptionsListForUser } from "~/models/optionsList.server";
-import { getSharedUsersForOptionsList, shareOptionsList, unshareOptionsList } from "~/models/optionsListSharing.server";
+import {
+  getOptionsList,
+  getOptionsListForUser,
+} from "~/models/optionsList.server";
+import {
+  getSharedUsersForOptionsList,
+  shareOptionsList,
+  unshareOptionsList,
+} from "~/models/optionsListSharing.server";
 import { getUserByEmail, User } from "~/models/user.server";
 import { requireUserId } from "~/session.server";
 import { trackRouteChange } from "~/utils/performance";
@@ -74,7 +81,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     }
 
     if (userToShareWith.id === userId) {
-      return json({ error: "You cannot share a list with yourself" }, { status: 400 });
+      return json(
+        { error: "You cannot share a list with yourself" },
+        { status: 400 },
+      );
     }
 
     try {
