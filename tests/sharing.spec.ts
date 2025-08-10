@@ -81,9 +81,12 @@ test.describe("List Sharing", () => {
 
     // Create the second user directly in the database without logging in as them
     // We'll use a different approach to avoid the automatic login
-    const createUserResponse = await page.request.post("/tests/create-user-only", {
-      data: { email: sharedUserEmail },
-    });
+    const createUserResponse = await page.request.post(
+      "/tests/create-user-only",
+      {
+        data: { email: sharedUserEmail },
+      },
+    );
 
     // Verify the user was created successfully
     expect(createUserResponse.ok()).toBe(true);
@@ -130,7 +133,9 @@ test.describe("List Sharing", () => {
     await page.getByRole("link", { name: "My Shared List" }).click();
 
     // Should see the list details and that it's shared by the original user
-    await expect(page.locator(`text=Shared by email#${currentEmail}`)).toBeVisible();
+    await expect(
+      page.locator(`text=Shared by email#${currentEmail}`),
+    ).toBeVisible();
   });
 
   test("should show shared lists in the sidebar", async ({ page }) => {

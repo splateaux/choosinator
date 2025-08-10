@@ -2,9 +2,7 @@ import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { Link, NavLink, Outlet, useLoaderData } from "@remix-run/react";
 
 import Layout from "~/components/Layout";
-import {
-  getOptionsListsForUser,
-} from "~/models/optionsList.server";
+import { getOptionsListsForUser } from "~/models/optionsList.server";
 import { requireUserId } from "~/session.server";
 import { useUser } from "~/utils";
 

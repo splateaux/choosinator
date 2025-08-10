@@ -118,7 +118,8 @@ export async function getSharedUsersForOptionsList({
       const db = await arc.tables();
 
       const results = await db.optionsListSharing.query({
-        KeyConditionExpression: "userId = :ownerUserId AND optionsListId = :optionsListId",
+        KeyConditionExpression:
+          "userId = :ownerUserId AND optionsListId = :optionsListId",
         ExpressionAttributeValues: {
           ":ownerUserId": ownerUserId,
           ":optionsListId": optionsListId,
@@ -155,7 +156,8 @@ export async function isOptionsListSharedWithUser({
 
       const results = await db.optionsListSharing.query({
         IndexName: "sharedWithUserId-optionsListId-index",
-        KeyConditionExpression: "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
+        KeyConditionExpression:
+          "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
         ExpressionAttributeValues: {
           ":sharedWithUserId": sharedWithUserId,
           ":optionsListId": optionsListId,
