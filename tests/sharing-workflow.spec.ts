@@ -98,6 +98,11 @@ test.describe("Sharing Workflow", () => {
     await expect(page.locator("text=Shared with Me")).toBeVisible();
     await expect(page.locator(`text=${listName}`)).toBeVisible();
 
+    // Verify permission level is displayed (should show "Edit" by default)
+    await expect(
+      page.locator(`text=${listName}`).locator("xpath=..").getByText("Edit"),
+    ).toBeVisible();
+
     // Click on shared list and verify sharing details
     await page.getByRole("link", { name: listName }).click();
     await page.waitForURL(/\/optionsLists\/[^/]+$/, {
@@ -110,6 +115,9 @@ test.describe("Sharing Workflow", () => {
 
     // Verify shared user doesn't see sharing controls (not the owner)
     await expect(page.getByText("Share List")).not.toBeVisible();
+
+    // Verify shared user can see their permission level
+    await expect(page.getByText("Can Edit")).toBeVisible();
 
     // === PHASE 5: Return to Owner & Verify ===
 
@@ -143,5 +151,58 @@ test.describe("Sharing Workflow", () => {
     await expect(
       page.locator(".bg-gray-50").getByText(sharedUserEmail),
     ).toBeVisible();
+
+    // === PHASE 6: Test Permission Updates ===
+
+    // Test changing permission from Edit to View
+    // Find the permission dropdown specifically for the existing shared user using data-testid
+    const permissionSelect = page.locator(
+      '[data-testid="existing-user-permission-select"]',
+    );
+    await permissionSelect.selectOption("view");
+
+    // Click Save to update permission using data-testid
+    const saveButton = page.locator(
+      '[data-testid="existing-user-save-permission"]',
+    );
+    await saveButton.click();
+
+    // Wait for redirect and page reload
+    await page.waitForURL(/\/optionsLists\/[^/]+$/, {
+      waitUntil: "networkidle",
+    });
+
+    // Wait a bit more for the page to fully render
+    await page.waitForTimeout(1000);
+
+    // Debug: Check what's actually visible in the shared users section
+    console.log("Debug: Checking shared users section...");
+    const sharedUsersSection = page.locator(".bg-gray-50");
+    await expect(sharedUsersSection).toBeVisible();
+
+    // Debug: Log the text content
+    const sharedUserText = await sharedUsersSection.textContent();
+    console.log("Debug: Shared user section text:", sharedUserText);
+
+    // Debug: Check if the permission dropdown shows the updated value
+    const permissionSelectValue = await page
+      .locator('[data-testid="existing-user-permission-select"]')
+      .inputValue();
+    console.log("Debug: Permission select value:", permissionSelectValue);
+
+    // Verify the permission display shows "View" (without spaces)
+    await expect(page.locator(".bg-gray-50").getByText("(View)")).toBeVisible();
+
+    // Test changing permission back to Edit
+    await permissionSelect.selectOption("edit");
+    await saveButton.click();
+
+    // Wait for redirect and page reload
+    await page.waitForURL(/\/optionsLists\/[^/]+$/, {
+      waitUntil: "networkidle",
+    });
+
+    // Verify the permission display shows "Edit" (without spaces)
+    await expect(page.locator(".bg-gray-50").getByText("(Edit)")).toBeVisible();
   });
 });

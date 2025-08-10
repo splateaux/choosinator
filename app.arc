@@ -39,6 +39,7 @@ optionsListSharing
   userId *String 
   optionsListId **String
   sharedWithUserId String
+  permission String
   createdAt String
 
 @tables-indexes

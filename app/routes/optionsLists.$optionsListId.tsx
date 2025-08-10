@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import {
   isRouteErrorResponse,
   useLoaderData,
@@ -15,6 +15,8 @@ import {
 } from "~/models/optionsList.server";
 import {
   getSharedUsersForOptionsList,
+  getUserSharesForOptionsList,
+  updateSharePermission,
   shareOptionsList,
   unshareOptionsList,
 } from "~/models/optionsListSharing.server";
@@ -36,14 +38,19 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   // Get shared users if this user is the owner
   let sharedUsers: User[] = [];
+  let userShares: Awaited<ReturnType<typeof getUserSharesForOptionsList>> = [];
   if (optionsList.ownerUserId === userId) {
     sharedUsers = await getSharedUsersForOptionsList({
       optionsListId: params.optionsListId,
       ownerUserId: userId,
     });
+    userShares = await getUserSharesForOptionsList({
+      optionsListId: params.optionsListId,
+      ownerUserId: userId,
+    });
   }
 
-  return json({ optionsList, sharedUsers, currentUserId: userId });
+  return json({ optionsList, sharedUsers, userShares, currentUserId: userId });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -65,6 +72,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (action === "share") {
     const email = formData.get("email") as string;
+    const permission = (formData.get("permission") as string) || "edit";
     if (!email) {
       return json({ error: "Email is required" }, { status: 400 });
     }
@@ -87,10 +95,34 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         optionsListId,
         ownerUserId: userId,
         sharedWithUserId: userToShareWith.id,
+        permission: permission === "view" ? "view" : "edit",
       });
       return json({ success: `List shared with ${email}` });
     } catch (error) {
       return json({ error: "Failed to share list" }, { status: 500 });
+    }
+  }
+
+  if (action === "update-permission") {
+    const sharedWithUserId = formData.get("sharedWithUserId") as User["id"];
+    const permission = formData.get("permission") as string;
+    if (!sharedWithUserId || !permission) {
+      return json(
+        { error: "User ID and permission are required" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      await updateSharePermission({
+        optionsListId,
+        ownerUserId: userId,
+        sharedWithUserId,
+        permission: permission === "view" ? "view" : "edit",
+      });
+      return redirect(`/optionsLists/${optionsListId}`);
+    } catch (error) {
+      return json({ error: "Failed to update permission" }, { status: 500 });
     }
   }
 
@@ -130,9 +162,18 @@ export default function OptionsListDetailsPage() {
       <div className="flex items-center justify-between">
         <h3 className="text-2xl font-bold">{data.optionsList.name}</h3>
         {!isOwner ? (
-          <span className="text-sm text-gray-500">
-            Shared by {data.optionsList.ownerUserId}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">
+              Shared by {data.optionsList.ownerUserId}
+            </span>
+            {"permission" in data.optionsList ? (
+              <span className="text-xs text-gray-600 font-medium px-2 py-1 bg-gray-100 rounded">
+                {data.optionsList.permission === "view"
+                  ? "View Only"
+                  : "Can Edit"}
+              </span>
+            ) : null}
+          </div>
         ) : null}
       </div>
       <hr className="my-4" />
@@ -143,6 +184,7 @@ export default function OptionsListDetailsPage() {
           <ShareList
             optionsListId={data.optionsList.id}
             sharedUsers={data.sharedUsers}
+            userShares={data.userShares}
           />
         </div>
       ) : null}
