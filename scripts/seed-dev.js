@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 const DEV_USERS = [
   { email: "dev@example.com", password: "devpassword123" },
   { email: "dev2@example.com", password: "devpassword123" },
+  { email: "dev3@example.com", password: "devpassword123" },
 ];
 
 async function seedDevUser(email, password) {

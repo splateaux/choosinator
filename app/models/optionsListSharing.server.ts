@@ -32,9 +32,9 @@ export async function shareOptionsList({
       const db = await arc.tables();
 
       const result = await db.optionsListSharing.put({
-        userId: ownerUserId,
         optionsListId: optionsListId,
         sharedWithUserId: sharedWithUserId,
+        userId: ownerUserId,
         permission,
         createdAt: new Date().toISOString(),
       });
@@ -53,36 +53,21 @@ export async function shareOptionsList({
 
 export async function unshareOptionsList({
   optionsListId,
-  ownerUserId,
   sharedWithUserId,
 }: Pick<
   OptionsListSharing,
-  "optionsListId" | "ownerUserId" | "sharedWithUserId"
+  "optionsListId" | "sharedWithUserId"
 >): Promise<void> {
   return PerformanceMonitor.measureAsync(
     `DB: unshareOptionsList(${optionsListId}, ${sharedWithUserId})`,
     async () => {
       const db = await arc.tables();
 
-      // Find the sharing record and delete it
-      const results = await db.optionsListSharing.query({
-        KeyConditionExpression: "userId = :ownerUserId",
-        FilterExpression:
-          "optionsListId = :optionsListId AND sharedWithUserId = :sharedWithUserId",
-        ExpressionAttributeValues: {
-          ":ownerUserId": ownerUserId,
-          ":optionsListId": optionsListId,
-          ":sharedWithUserId": sharedWithUserId,
-        },
+      // With the new table structure, the primary key is optionsListId + sharedWithUserId
+      await db.optionsListSharing.delete({
+        optionsListId,
+        sharedWithUserId,
       });
-
-      if (results.Items.length > 0) {
-        const sharingRecord = results.Items[0];
-        await db.optionsListSharing.delete({
-          userId: sharingRecord.userId,
-          optionsListId: sharingRecord.optionsListId,
-        });
-      }
     },
   );
 }
@@ -95,6 +80,7 @@ export async function getSharedOptionsListsForUser(
     async () => {
       const db = await arc.tables();
 
+      // Use the GSI (sharedWithUserId-optionsListId-index) to query by sharedWithUserId
       const results = await db.optionsListSharing.query({
         IndexName: "sharedWithUserId-optionsListId-index",
         KeyConditionExpression: "sharedWithUserId = :sharedWithUserId",
@@ -117,18 +103,16 @@ export async function getSharedOptionsListsForUser(
 
 export async function getSharedUsersForOptionsList({
   optionsListId,
-  ownerUserId,
-}: Pick<OptionsListSharing, "optionsListId" | "ownerUserId">): Promise<User[]> {
+}: Pick<OptionsListSharing, "optionsListId">): Promise<User[]> {
   return PerformanceMonitor.measureAsync(
     `DB: getSharedUsersForOptionsList(${optionsListId})`,
     async () => {
       const db = await arc.tables();
 
+      // Use the base table PK (optionsListId + sharedWithUserId) to get all shares for this list
       const results = await db.optionsListSharing.query({
-        KeyConditionExpression:
-          "userId = :ownerUserId AND optionsListId = :optionsListId",
+        KeyConditionExpression: "optionsListId = :optionsListId",
         ExpressionAttributeValues: {
-          ":ownerUserId": ownerUserId,
           ":optionsListId": optionsListId,
         },
       });
@@ -156,20 +140,16 @@ export interface OptionsListUserShare {
 
 export async function getUserSharesForOptionsList({
   optionsListId,
-  ownerUserId,
-}: Pick<OptionsListSharing, "optionsListId" | "ownerUserId">): Promise<
-  OptionsListUserShare[]
-> {
+}: Pick<OptionsListSharing, "optionsListId">): Promise<OptionsListUserShare[]> {
   return PerformanceMonitor.measureAsync(
     `DB: getUserSharesForOptionsList(${optionsListId})`,
     async () => {
       const db = await arc.tables();
 
+      // Use the base table PK (optionsListId + sharedWithUserId)
       const results = await db.optionsListSharing.query({
-        KeyConditionExpression:
-          "userId = :ownerUserId AND optionsListId = :optionsListId",
+        KeyConditionExpression: "optionsListId = :optionsListId",
         ExpressionAttributeValues: {
-          ":ownerUserId": ownerUserId,
           ":optionsListId": optionsListId,
         },
       });
@@ -201,6 +181,7 @@ export async function isOptionsListSharedWithUser({
     async () => {
       const db = await arc.tables();
 
+      // Use the GSI (sharedWithUserId-optionsListId-index) to query by sharedWithUserId and optionsListId
       const results = await db.optionsListSharing.query({
         IndexName: "sharedWithUserId-optionsListId-index",
         KeyConditionExpression:
@@ -221,7 +202,7 @@ export async function getShareRecordForUser({
   sharedWithUserId,
 }: Pick<OptionsListSharing, "optionsListId" | "sharedWithUserId">): Promise<{
   optionsListId: string;
-  ownerUserId: string;
+  ownerUserId: User["id"];
   sharedWithUserId: string;
   permission: "view" | "edit";
   createdAt: string;
@@ -230,6 +211,8 @@ export async function getShareRecordForUser({
     `DB: getShareRecordForUser(${optionsListId}, ${sharedWithUserId})`,
     async () => {
       const db = await arc.tables();
+
+      // Use the GSI (sharedWithUserId-optionsListId-index) to query by sharedWithUserId + optionsListId
       const results = await db.optionsListSharing.query({
         IndexName: "sharedWithUserId-optionsListId-index",
         KeyConditionExpression:
@@ -245,7 +228,7 @@ export async function getShareRecordForUser({
       const item = results.Items[0];
       return {
         optionsListId: item.optionsListId,
-        ownerUserId: item.userId,
+        ownerUserId: item.userId as User["id"],
         sharedWithUserId: item.sharedWithUserId,
         permission: item.permission ?? "edit",
         createdAt: item.createdAt,
@@ -284,36 +267,13 @@ export async function updateSharePermission({
     async () => {
       const db = await arc.tables();
 
-      // Find existing record using the sharedWithUserId index
-      const results = await db.optionsListSharing.query({
-        IndexName: "sharedWithUserId-optionsListId-index",
-        KeyConditionExpression:
-          "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
-        ExpressionAttributeValues: {
-          ":sharedWithUserId": sharedWithUserId,
-          ":optionsListId": optionsListId,
-        },
-      });
-
-      if (results.Items.length === 0) {
-        throw new Error("Share record not found");
-      }
-
-      const sharingRecord = results.Items[0];
-
-      // Verify this record belongs to the owner
-      if (sharingRecord.userId !== ownerUserId) {
-        throw new Error(
-          "Unauthorized: You can only update permissions for lists you own",
-        );
-      }
-
+      // With the new table structure, the primary key is optionsListId + sharedWithUserId
       await db.optionsListSharing.put({
-        userId: sharingRecord.userId,
-        optionsListId: sharingRecord.optionsListId,
-        sharedWithUserId: sharingRecord.sharedWithUserId,
-        createdAt: sharingRecord.createdAt,
+        optionsListId,
+        sharedWithUserId,
+        userId: ownerUserId,
         permission,
+        createdAt: new Date().toISOString(), // Update the timestamp
       });
     },
   );

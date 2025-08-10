@@ -102,10 +102,9 @@ vi.mock("@architect/functions", () => {
             };
 
             // Check if item already exists and update it, otherwise add new
-            // The key is userId + optionsListId + sharedWithUserId
+            // The key is optionsListId + sharedWithUserId (owner tracked in attribute userId)
             const existingIndex = sharingRows.findIndex(
               (r) =>
-                r.userId === item.userId &&
                 r.optionsListId === item.optionsListId &&
                 r.sharedWithUserId === item.sharedWithUserId,
             );
@@ -119,15 +118,18 @@ vi.mock("@architect/functions", () => {
             return itemWithPermission;
           },
           delete: async ({
-            userId,
             optionsListId,
+            sharedWithUserId,
           }: {
-            userId: string;
             optionsListId: string;
+            sharedWithUserId: string;
           }) => {
             sharingRows = sharingRows.filter(
               (r) =>
-                !(r.userId === userId && r.optionsListId === optionsListId),
+                !(
+                  r.optionsListId === optionsListId &&
+                  r.sharedWithUserId === sharedWithUserId
+                ),
             );
             return {} as any;
           },
@@ -347,7 +349,6 @@ describe("OptionsListSharing", () => {
     // Initially no shared users
     const initiallyShared = await getSharedUsersForOptionsList({
       optionsListId: list.id,
-      ownerUserId: owner.id,
     });
     expect(initiallyShared).toHaveLength(0);
 
@@ -366,7 +367,6 @@ describe("OptionsListSharing", () => {
     // Now should have shared users
     const nowShared = await getSharedUsersForOptionsList({
       optionsListId: list.id,
-      ownerUserId: owner.id,
     });
     expect(nowShared).toHaveLength(2);
     expect(nowShared.map((u) => u.email)).toContain(sharedUser1.email);
@@ -401,7 +401,6 @@ describe("OptionsListSharing", () => {
     // Unshare the list
     await unshareOptionsList({
       optionsListId: list.id,
-      ownerUserId: owner.id,
       sharedWithUserId: sharedUser.id,
     });
 

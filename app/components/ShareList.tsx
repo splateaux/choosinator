@@ -14,7 +14,21 @@ export default function ShareList({
   sharedUsers,
   userShares = [],
 }: ShareListProps) {
-  const actionData = useActionData<{ error?: string; success?: string }>();
+  const actionData = useActionData<{
+    error?: string;
+    success?: string;
+    action?: string;
+  }>();
+
+  // Only show errors that are not from option actions
+  const sharingError =
+    actionData?.error && !actionData.action?.startsWith("option.")
+      ? actionData.error
+      : undefined;
+  const sharingSuccess =
+    actionData?.success && !actionData.action?.startsWith("option.")
+      ? actionData.success
+      : undefined;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const [email, setEmail] = useState("");
@@ -77,15 +91,15 @@ export default function ShareList({
       </Form>
 
       {/* Error/Success messages */}
-      {actionData?.error ? (
+      {sharingError ? (
         <div className="rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-700">{actionData.error}</div>
+          <div className="text-sm text-red-700">{sharingError}</div>
         </div>
       ) : null}
 
-      {actionData?.success ? (
+      {sharingSuccess ? (
         <div className="rounded-md bg-green-50 p-4">
-          <div className="text-sm text-green-700">{actionData.success}</div>
+          <div className="text-sm text-green-700">{sharingSuccess}</div>
         </div>
       ) : null}
 

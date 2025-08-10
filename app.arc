@@ -36,16 +36,21 @@ option
   optionId **String 
 
 optionsListSharing
-  userId *String 
-  optionsListId **String
-  sharedWithUserId String
+  optionsListId *String          
+  sharedWithUserId **String      
+  userId String                  
   permission String
   createdAt String
 
 @tables-indexes
-optionsList
-  optionsListId *String
-
 optionsListSharing
   sharedWithUserId *String
   optionsListId **String
+  name sharedWithUserId-optionsListId-index
+  projection all
+
+optionsListSharing
+  userId *String
+  optionsListId **String
+  name userId-optionsListId-index
+  projection all
