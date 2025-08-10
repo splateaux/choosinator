@@ -140,9 +140,7 @@ export interface OptionsListUserShare {
 
 export async function getUserSharesForOptionsList({
   optionsListId,
-}: Pick<OptionsListSharing, "optionsListId">): Promise<
-  OptionsListUserShare[]
-> {
+}: Pick<OptionsListSharing, "optionsListId">): Promise<OptionsListUserShare[]> {
   return PerformanceMonitor.measureAsync(
     `DB: getUserSharesForOptionsList(${optionsListId})`,
     async () => {

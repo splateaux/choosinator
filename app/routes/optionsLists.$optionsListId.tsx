@@ -9,8 +9,16 @@ import { useEffect } from "react";
 import invariant from "tiny-invariant";
 
 import ShareList from "~/components/ShareList";
-import { getOptionsForList, createOption, updateOption, deleteOption } from "~/models/option.server";
-import { getOptionsList, getOptionsListForUser } from "~/models/optionsList.server";
+import {
+  getOptionsForList,
+  createOption,
+  updateOption,
+  deleteOption,
+} from "~/models/option.server";
+import {
+  getOptionsList,
+  getOptionsListForUser,
+} from "~/models/optionsList.server";
 import {
   getSharedUsersForOptionsList,
   getUserSharesForOptionsList,
@@ -183,7 +191,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
     if (action === "option.create") {
       const name = (formData.get("name") as string)?.trim();
-      const description = ((formData.get("description") as string) || "").trim();
+      const description = (
+        (formData.get("description") as string) || ""
+      ).trim();
       if (!name) {
         return json({ error: "Name is required" }, { status: 400 });
       }
@@ -194,7 +204,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     if (action === "option.update") {
       const id = formData.get("id") as string;
       const name = (formData.get("name") as string)?.trim();
-      const description = ((formData.get("description") as string) || "").trim();
+      const description = (
+        (formData.get("description") as string) || ""
+      ).trim();
       if (!id) {
         return json({ error: "Option ID is required" }, { status: 400 });
       }
@@ -257,7 +269,10 @@ export default function OptionsListDetailsPage() {
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-lg font-semibold">Options</h4>
           {!data.canEdit ? (
-            <span className="text-xs text-gray-500" data-testid="options-view-only">
+            <span
+              className="text-xs text-gray-500"
+              data-testid="options-view-only"
+            >
               View Only
             </span>
           ) : null}
@@ -308,7 +323,11 @@ export default function OptionsListDetailsPage() {
                   {data.canEdit ? (
                     <div className="flex items-center gap-2">
                       <form method="post">
-                        <input type="hidden" name="action" value="option.delete" />
+                        <input
+                          type="hidden"
+                          name="action"
+                          value="option.delete"
+                        />
                         <input type="hidden" name="id" value={opt.id} />
                         <button
                           type="submit"
@@ -329,8 +348,15 @@ export default function OptionsListDetailsPage() {
                     >
                       Edit
                     </summary>
-                    <form method="post" className="mt-2 grid gap-2 sm:grid-cols-3">
-                      <input type="hidden" name="action" value="option.update" />
+                    <form
+                      method="post"
+                      className="mt-2 grid gap-2 sm:grid-cols-3"
+                    >
+                      <input
+                        type="hidden"
+                        name="action"
+                        value="option.update"
+                      />
                       <input type="hidden" name="id" value={opt.id} />
                       <input
                         name="name"
