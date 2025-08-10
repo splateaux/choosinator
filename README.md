@@ -72,6 +72,7 @@ Two users are created for you automatically:
 
 - `dev@example.com` / `devpassword123`
 - `dev2@example.com` / `devpassword123`
+- `dev3@example.com` / `devpassword123`
 
 To change the seed data, edit `sandbox-seed.json`. To change the password, generate a new bcrypt hash and update the `password` entries:
 

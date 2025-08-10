@@ -75,23 +75,13 @@ export async function getOptionsListForUser({
       });
 
       if (shareRecord) {
-        // Find the owner by querying all lists with this ID
-        const allResults = await db.optionsList.query({
-          IndexName: "optionsListId-index",
-          KeyConditionExpression: "optionsListId = :optionsListId",
-          ExpressionAttributeValues: {
-            ":optionsListId": id,
-          },
+        // We have the owner from the share record; fetch the list directly by base table PK
+        const ownedList = await getOptionsList({
+          id,
+          ownerUserId: shareRecord.ownerUserId,
         });
-
-        if (allResults.Items.length > 0) {
-          const listData = allResults.Items[0];
-          return {
-            ownerUserId: listData.userId,
-            id: listData.optionsListId,
-            name: listData.name,
-            permission: shareRecord.permission,
-          };
+        if (ownedList) {
+          return { ...ownedList, permission: shareRecord.permission };
         }
       }
 
