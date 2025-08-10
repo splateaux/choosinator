@@ -11,6 +11,7 @@ export interface OptionsListSharing {
   optionsListId: OptionsList["id"];
   ownerUserId: User["id"];
   sharedWithUserId: User["id"];
+  permission: "view" | "edit";
   createdAt: string;
 }
 
@@ -18,10 +19,13 @@ export async function shareOptionsList({
   optionsListId,
   ownerUserId,
   sharedWithUserId,
-}: Pick<
-  OptionsListSharing,
-  "optionsListId" | "ownerUserId" | "sharedWithUserId"
->): Promise<OptionsListSharing> {
+  permission = "edit",
+}: {
+  optionsListId: OptionsListSharing["optionsListId"];
+  ownerUserId: OptionsListSharing["ownerUserId"];
+  sharedWithUserId: OptionsListSharing["sharedWithUserId"];
+  permission?: OptionsListSharing["permission"];
+}): Promise<OptionsListSharing> {
   return PerformanceMonitor.measureAsync(
     `DB: shareOptionsList(${optionsListId}, ${sharedWithUserId})`,
     async () => {
@@ -31,6 +35,7 @@ export async function shareOptionsList({
         userId: ownerUserId,
         optionsListId: optionsListId,
         sharedWithUserId: sharedWithUserId,
+        permission,
         createdAt: new Date().toISOString(),
       });
 
@@ -39,6 +44,7 @@ export async function shareOptionsList({
         optionsListId: result.optionsListId,
         ownerUserId: result.userId,
         sharedWithUserId: result.sharedWithUserId,
+        permission: result.permission ?? "edit",
         createdAt: result.createdAt,
       };
     },
@@ -102,6 +108,7 @@ export async function getSharedOptionsListsForUser(
         optionsListId: item.optionsListId,
         ownerUserId: item.userId,
         sharedWithUserId: item.sharedWithUserId,
+        permission: item.permission ?? "edit",
         createdAt: item.createdAt,
       }));
     },
@@ -142,6 +149,46 @@ export async function getSharedUsersForOptionsList({
   );
 }
 
+export interface OptionsListUserShare {
+  user: User;
+  permission: "view" | "edit";
+}
+
+export async function getUserSharesForOptionsList({
+  optionsListId,
+  ownerUserId,
+}: Pick<OptionsListSharing, "optionsListId" | "ownerUserId">): Promise<
+  OptionsListUserShare[]
+> {
+  return PerformanceMonitor.measureAsync(
+    `DB: getUserSharesForOptionsList(${optionsListId})`,
+    async () => {
+      const db = await arc.tables();
+
+      const results = await db.optionsListSharing.query({
+        KeyConditionExpression:
+          "userId = :ownerUserId AND optionsListId = :optionsListId",
+        ExpressionAttributeValues: {
+          ":ownerUserId": ownerUserId,
+          ":optionsListId": optionsListId,
+        },
+      });
+
+      const shares: OptionsListUserShare[] = [];
+      for (const item of results.Items) {
+        const user = await import("./user.server").then((m) =>
+          m.getUserById(item.sharedWithUserId),
+        );
+        if (user) {
+          shares.push({ user, permission: item.permission ?? "edit" });
+        }
+      }
+
+      return shares;
+    },
+  );
+}
+
 export async function isOptionsListSharedWithUser({
   optionsListId,
   sharedWithUserId,
@@ -165,6 +212,109 @@ export async function isOptionsListSharedWithUser({
       });
 
       return results.Items.length > 0;
+    },
+  );
+}
+
+export async function getShareRecordForUser({
+  optionsListId,
+  sharedWithUserId,
+}: Pick<OptionsListSharing, "optionsListId" | "sharedWithUserId">): Promise<
+  | {
+    optionsListId: string;
+    ownerUserId: string;
+    sharedWithUserId: string;
+    permission: "view" | "edit";
+    createdAt: string;
+  }
+  | null
+> {
+  return PerformanceMonitor.measureAsync(
+    `DB: getShareRecordForUser(${optionsListId}, ${sharedWithUserId})`,
+    async () => {
+      const db = await arc.tables();
+      const results = await db.optionsListSharing.query({
+        IndexName: "sharedWithUserId-optionsListId-index",
+        KeyConditionExpression:
+          "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
+        ExpressionAttributeValues: {
+          ":sharedWithUserId": sharedWithUserId,
+          ":optionsListId": optionsListId,
+        },
+        Limit: 1,
+      });
+
+      if (results.Items.length === 0) return null;
+      const item = results.Items[0];
+      return {
+        optionsListId: item.optionsListId,
+        ownerUserId: item.userId,
+        sharedWithUserId: item.sharedWithUserId,
+        permission: item.permission ?? "edit",
+        createdAt: item.createdAt,
+      };
+    },
+  );
+}
+
+export async function isOptionsListEditableByUser({
+  optionsListId,
+  ownerUserId,
+  userId,
+}: {
+  optionsListId: OptionsList["id"];
+  ownerUserId: User["id"];
+  userId: User["id"];
+}): Promise<boolean> {
+  if (ownerUserId === userId) return true;
+  const record = await getShareRecordForUser({
+    optionsListId,
+    sharedWithUserId: userId,
+  });
+  return record?.permission === "edit";
+}
+export async function updateSharePermission({
+  optionsListId,
+  ownerUserId,
+  sharedWithUserId,
+  permission,
+}: Pick<
+  OptionsListSharing,
+  "optionsListId" | "ownerUserId" | "sharedWithUserId" | "permission"
+>): Promise<void> {
+  return PerformanceMonitor.measureAsync(
+    `DB: updateSharePermission(${optionsListId}, ${sharedWithUserId}, ${permission})`,
+    async () => {
+      const db = await arc.tables();
+
+      // Find existing record using the sharedWithUserId index
+      const results = await db.optionsListSharing.query({
+        IndexName: "sharedWithUserId-optionsListId-index",
+        KeyConditionExpression: "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
+        ExpressionAttributeValues: {
+          ":sharedWithUserId": sharedWithUserId,
+          ":optionsListId": optionsListId,
+        },
+      });
+
+      if (results.Items.length === 0) {
+        throw new Error("Share record not found");
+      }
+
+      const sharingRecord = results.Items[0];
+      
+      // Verify this record belongs to the owner
+      if (sharingRecord.userId !== ownerUserId) {
+        throw new Error("Unauthorized: You can only update permissions for lists you own");
+      }
+
+      await db.optionsListSharing.put({
+        userId: sharingRecord.userId,
+        optionsListId: sharingRecord.optionsListId,
+        sharedWithUserId: sharingRecord.sharedWithUserId,
+        createdAt: sharingRecord.createdAt,
+        permission,
+      });
     },
   );
 }

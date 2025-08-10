@@ -6,6 +6,7 @@ interface SharingRow {
   optionsListId: string;
   sharedWithUserId: string;
   createdAt: string;
+  permission?: string;
 }
 
 interface UserRow {
@@ -94,8 +95,29 @@ vi.mock("@architect/functions", () => {
         },
         optionsListSharing: {
           put: async (item: SharingRow) => {
-            sharingRows.push(item);
-            return item;
+            // Ensure permission has a default value
+            const itemWithPermission = {
+              ...item,
+              permission: item.permission || "edit"
+            };
+
+            // Check if item already exists and update it, otherwise add new
+            // The key is userId + optionsListId + sharedWithUserId
+            const existingIndex = sharingRows.findIndex(
+              (r) => r.userId === item.userId &&
+                r.optionsListId === item.optionsListId &&
+                r.sharedWithUserId === item.sharedWithUserId
+            );
+
+            if (existingIndex >= 0) {
+              sharingRows[existingIndex] = itemWithPermission;
+            } else {
+              sharingRows.push(itemWithPermission);
+            }
+
+
+
+            return itemWithPermission;
           },
           delete: async ({
             userId,
@@ -112,7 +134,17 @@ vi.mock("@architect/functions", () => {
           },
           query: async (params: any) => {
             let Items = sharingRows;
-            if (params.IndexName === "sharedWithUserId") {
+
+            if (params.IndexName === "sharedWithUserId-optionsListId-index") {
+              const sharedWithUserId = params.ExpressionAttributeValues[":sharedWithUserId"];
+              Items = Items.filter((r) => r.sharedWithUserId === sharedWithUserId);
+
+              // If optionsListId is also provided in KeyConditionExpression, filter by it too
+              if (params.KeyConditionExpression?.includes("optionsListId = :optionsListId")) {
+                const optionsListId = params.ExpressionAttributeValues[":optionsListId"];
+                Items = Items.filter((r) => r.optionsListId === optionsListId);
+              }
+            } else if (params.IndexName === "sharedWithUserId") {
               const v = params.ExpressionAttributeValues[":sharedWithUserId"];
               Items = Items.filter((r) => r.sharedWithUserId === v);
             }
@@ -121,6 +153,12 @@ vi.mock("@architect/functions", () => {
             ) {
               const v = params.ExpressionAttributeValues[":ownerUserId"];
               Items = Items.filter((r) => r.userId === v);
+
+              // If optionsListId is also in KeyConditionExpression, filter by it too
+              if (params.KeyConditionExpression?.includes("optionsListId = :optionsListId")) {
+                const optionsListId = params.ExpressionAttributeValues[":optionsListId"];
+                Items = Items.filter((r) => r.optionsListId === optionsListId);
+              }
             }
             if (
               params.FilterExpression?.includes(
@@ -138,6 +176,8 @@ vi.mock("@architect/functions", () => {
               const v = params.ExpressionAttributeValues[":sharedWithUserId"];
               Items = Items.filter((r) => r.sharedWithUserId === v);
             }
+
+            console.log("Final Items:", Items);
             return { Items };
           },
         },
@@ -185,6 +225,7 @@ import {
   isOptionsListSharedWithUser,
   shareOptionsList,
   unshareOptionsList,
+  updateSharePermission,
 } from "./optionsListSharing.server";
 import { createUser } from "./user.server";
 
@@ -358,5 +399,53 @@ describe("OptionsListSharing", () => {
       sharedWithUserId: sharedUser.id,
     });
     expect(isStillShared).toBe(false);
+  });
+
+  test("should update share permission", async () => {
+    // Create test users
+    const owner = await createUser("owner6@test.com", "password123");
+    const sharedUser = await createUser("shared6@test.com", "password123");
+
+    // Create a list
+    const list = await createOptionsList({
+      name: "Test List 6",
+      ownerUserId: owner.id,
+    });
+
+    // Share the list with edit permission (default)
+    await shareOptionsList({
+      optionsListId: list.id,
+      ownerUserId: owner.id,
+      sharedWithUserId: sharedUser.id,
+      permission: "edit",
+    });
+
+    // Verify initial permission
+    const initiallyShared = await getSharedOptionsListsForUser(sharedUser.id);
+    expect(initiallyShared[0].permission).toBe("edit");
+
+    // Update permission to view
+    await updateSharePermission({
+      optionsListId: list.id,
+      ownerUserId: owner.id,
+      sharedWithUserId: sharedUser.id,
+      permission: "view",
+    });
+
+    // Verify permission was updated
+    const updatedShared = await getSharedOptionsListsForUser(sharedUser.id);
+    expect(updatedShared[0].permission).toBe("view");
+
+    // Update permission back to edit
+    await updateSharePermission({
+      optionsListId: list.id,
+      ownerUserId: owner.id,
+      sharedWithUserId: sharedUser.id,
+      permission: "edit",
+    });
+
+    // Verify permission was updated again
+    const finalShared = await getSharedOptionsListsForUser(sharedUser.id);
+    expect(finalShared[0].permission).toBe("edit");
   });
 });

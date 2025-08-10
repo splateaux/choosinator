@@ -11,6 +11,10 @@ export interface OptionsList {
   ownerUserId: User["id"];
 }
 
+export interface SharedOptionsList extends OptionsList {
+  permission: "view" | "edit";
+}
+
 export async function getOptionsList({
   id,
   ownerUserId,
@@ -42,7 +46,7 @@ export async function getOptionsListForUser({
 }: {
   id: OptionsList["id"];
   userId: User["id"];
-}): Promise<OptionsList | null> {
+}): Promise<OptionsList | SharedOptionsList | null> {
   return PerformanceMonitor.measureAsync(
     `DB: getOptionsListForUser(${id}, ${userId})`,
     async () => {
@@ -62,15 +66,15 @@ export async function getOptionsListForUser({
       }
 
       // If not found as owner, check if shared
-      const { isOptionsListSharedWithUser } = await import(
+      const { getShareRecordForUser } = await import(
         "./optionsListSharing.server"
       );
-      const isShared = await isOptionsListSharedWithUser({
+      const shareRecord = await getShareRecordForUser({
         optionsListId: id,
         sharedWithUserId: userId,
       });
 
-      if (isShared) {
+      if (shareRecord) {
         // Find the owner by querying all lists with this ID
         const allResults = await db.optionsList.query({
           IndexName: "optionsListId-index",
@@ -86,6 +90,7 @@ export async function getOptionsListForUser({
             ownerUserId: listData.userId,
             id: listData.optionsListId,
             name: listData.name,
+            permission: shareRecord.permission,
           };
         }
       }
@@ -121,7 +126,7 @@ export async function getOptionsListsByOwner(
 
 export async function getOptionsListsForUser(
   userId: User["id"],
-): Promise<{ owned: OptionsList[]; shared: OptionsList[] }> {
+): Promise<{ owned: OptionsList[]; shared: SharedOptionsList[] }> {
   return PerformanceMonitor.measureAsync(
     `DB: getOptionsListsForUser(${userId})`,
     async () => {
@@ -134,14 +139,17 @@ export async function getOptionsListsForUser(
       );
       const sharedSharingRecords = await getSharedOptionsListsForUser(userId);
 
-      const shared: OptionsList[] = [];
+      const shared: SharedOptionsList[] = [];
       for (const sharingRecord of sharedSharingRecords) {
         const list = await getOptionsList({
           id: sharingRecord.optionsListId,
           ownerUserId: sharingRecord.ownerUserId,
         });
         if (list) {
-          shared.push(list);
+          shared.push({
+            ...list,
+            permission: sharingRecord.permission,
+          });
         }
       }
 

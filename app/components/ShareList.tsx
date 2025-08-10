@@ -6,11 +6,13 @@ import { User } from "~/models/user.server";
 interface ShareListProps {
   optionsListId: string;
   sharedUsers: User[];
+  userShares?: { user: User; permission: "view" | "edit" }[];
 }
 
 export default function ShareList({
   optionsListId,
   sharedUsers,
+  userShares = [],
 }: ShareListProps) {
   const actionData = useActionData<{ error?: string; success?: string }>();
   const navigation = useNavigation();
@@ -52,8 +54,19 @@ export default function ShareList({
               placeholder="user@example.com"
               required
             />
+            <select
+              name="permission"
+              data-testid="new-user-permission-select"
+              className="rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              defaultValue="edit"
+              aria-label="Permission"
+            >
+              <option value="view">View</option>
+              <option value="edit">Edit</option>
+            </select>
             <button
               type="submit"
+              data-testid="share-new-user-button"
               disabled={isSubmitting || !email.trim()}
               className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
@@ -86,24 +99,52 @@ export default function ShareList({
             {sharedUsers.map((user) => (
               <li
                 key={user.id}
+                data-testid={`shared-user-${user.id}`}
                 className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2"
               >
-                <span className="text-sm text-gray-900">{user.email}</span>
-                <Form method="post" className="inline">
-                  <input type="hidden" name="action" value="unshare" />
-                  <input
-                    type="hidden"
-                    name="optionsListId"
-                    value={optionsListId}
-                  />
-                  <input
-                    type="hidden"
-                    name="sharedWithUserId"
-                    value={user.id}
-                  />
+                <span className="text-sm text-gray-900">
+                  {user.email}
+                  {userShares.length > 0 ? (
+                    <span className="ml-2 text-gray-500">(
+                      {
+                        userShares.find((s) => s.user.id === user.id)?.permission ===
+                          "view"
+                          ? "View"
+                          : "Edit"
+                      }
+                      )
+                    </span>
+                  ) : null}
+                </span>
+                <Form method="post" className="inline flex items-center gap-2">
+                  <input type="hidden" name="optionsListId" value={optionsListId} />
+                  <input type="hidden" name="sharedWithUserId" value={user.id} />
+                  <select
+                    name="permission"
+                    data-testid="existing-user-permission-select"
+                    defaultValue={
+                      userShares.find((s) => s.user.id === user.id)?.permission ||
+                      "edit"
+                    }
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="view">View</option>
+                    <option value="edit">Edit</option>
+                  </select>
+                  <button
+                    type="submit"
+                    data-testid="existing-user-save-permission"
+                    className="text-xs text-blue-600 hover:text-blue-800 focus:outline-none"
+                    name="action"
+                    value="update-permission"
+                  >
+                    Save
+                  </button>
                   <button
                     type="submit"
                     className="text-sm text-red-600 hover:text-red-800 focus:outline-none"
+                    name="action"
+                    value="unshare"
                   >
                     Remove
                   </button>
