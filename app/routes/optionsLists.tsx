@@ -3,8 +3,7 @@ import { Link, NavLink, Outlet, useLoaderData } from "@remix-run/react";
 
 import Layout from "~/components/Layout";
 import {
-  getOptionsListsByOwner,
-  type OptionsList,
+  getOptionsListsForUser,
 } from "~/models/optionsList.server";
 import { requireUserId } from "~/session.server";
 import { useUser } from "~/utils";
@@ -12,9 +11,7 @@ import { useUser } from "~/utils";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const userId = await requireUserId(request);
 
-  // For now, just get owned lists to avoid database issues
-  const owned = await getOptionsListsByOwner(userId);
-  const shared: OptionsList[] = []; // Empty for now
+  const { owned, shared } = await getOptionsListsForUser(userId);
 
   return json({ owned, shared });
 };

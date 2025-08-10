@@ -10,6 +10,7 @@ test.describe("List Sharing", () => {
     });
     await page.goto("/");
   });
+
   test("should allow users to share lists with other users", async ({
     page,
   }) => {
@@ -42,6 +43,94 @@ test.describe("List Sharing", () => {
     await expect(
       page.locator("text=You cannot share a list with yourself"),
     ).toBeVisible();
+  });
+
+  test("should prevent sharing a list with yourself", async ({ page }) => {
+    // Navigate to the options lists page
+    await page.goto("/optionsLists");
+
+    // Create a new list
+    await page.getByRole("link", { name: "+ New Options List" }).click();
+    await page.getByLabel("Name:").fill("My List");
+    await page.getByRole("button", { name: "Save" }).click();
+
+    // Wait for the list to be created and navigate to it
+    await page.waitForURL(/\/optionsLists\/[^/]+$/);
+
+    // Try to share with yourself using the current user's email
+    await page.fill('input[name="email"]', currentEmail);
+    await page.click('button:has-text("Share")');
+
+    // Should show an error about sharing with yourself
+    await expect(
+      page.locator("text=You cannot share a list with yourself"),
+    ).toBeVisible();
+
+    // Verify that the list is not actually shared (no success message)
+    await expect(page.locator("text=List shared with")).not.toBeVisible();
+  });
+
+  test("should successfully share a list with another user", async ({
+    page,
+  }) => {
+    // Create a second user to share with - ensure it's different from current user
+    const sharedUserEmail = `${faker.internet.userName()}@example.com`;
+
+    // Verify the emails are different
+    expect(sharedUserEmail).not.toBe(currentEmail);
+
+    // Create the second user directly in the database without logging in as them
+    // We'll use a different approach to avoid the automatic login
+    const createUserResponse = await page.request.post("/tests/create-user-only", {
+      data: { email: sharedUserEmail },
+    });
+
+    // Verify the user was created successfully
+    expect(createUserResponse.ok()).toBe(true);
+
+    // Navigate to the options lists page
+    await page.goto("/optionsLists");
+
+    // Create a new list
+    await page.getByRole("link", { name: "+ New Options List" }).click();
+    await page.getByLabel("Name:").fill("My Shared List");
+    await page.getByRole("button", { name: "Save" }).click();
+
+    // Wait for the list to be created and navigate to it
+    await page.waitForURL(/\/optionsLists\/[^/]+$/);
+
+    // Clear the email field first to ensure it's empty
+    await page.fill('input[name="email"]', "");
+
+    // Share the list with the second user
+    await page.fill('input[name="email"]', sharedUserEmail);
+    await page.click('button:has-text("Share")');
+
+    // Should show success message
+    await expect(page.locator("text=List shared with")).toBeVisible();
+    await expect(page.locator(`text=${sharedUserEmail}`)).toBeVisible();
+
+    // Logout and login as the shared user
+    await page.getByRole("button", { name: "Log out" }).click();
+    await page.waitForURL("", { waitUntil: "networkidle" });
+
+    await page.goto("/login");
+    await page.getByLabel("Email address").fill(sharedUserEmail);
+    await page.getByLabel(/password/i).fill("devpassword123");
+    await page.getByRole("button", { name: "Log in" }).click();
+    await page.waitForURL("optionsLists", { waitUntil: "networkidle" });
+
+    // Navigate to options lists page
+    await page.goto("/optionsLists");
+
+    // Should see the shared list in the "Shared with Me" section
+    await expect(page.locator("text=My Shared List")).toBeVisible();
+
+    // Click on the shared list
+    await page.getByRole("link", { name: "My Shared List" }).click();
+
+    // Should see the list details and that it's shared by the original user
+    await expect(page.locator(`text=Shared by email#${currentEmail}`)).toBeVisible();
   });
 
   test("should show shared lists in the sidebar", async ({ page }) => {

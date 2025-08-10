@@ -9,3 +9,7 @@ preferences.arc
 sam.json
 sam.yaml
 .env
+
+# Playwright test artifacts
+playwright-report/
+test-results/

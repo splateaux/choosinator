@@ -10,7 +10,7 @@ export default defineConfig({
   reporter: "html",
   use: {
     actionTimeout: 0,
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3334",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3333",
     trace: "on-first-retry",
   },
 });
