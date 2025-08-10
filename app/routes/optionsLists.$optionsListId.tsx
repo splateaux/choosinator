@@ -107,7 +107,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       // Find the user to share with
       const userToShareWith = await getUserByEmail(email);
       if (!userToShareWith) {
-        return json({ error: "User not found", action: "share" }, { status: 404 });
+        return json(
+          { error: "User not found", action: "share" },
+          { status: 404 },
+        );
       }
 
       if (userToShareWith.id === userId) {
@@ -126,7 +129,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         });
         return json({ success: `List shared with ${email}`, action: "share" });
       } catch (error) {
-        return json({ error: "Failed to share list", action: "share" }, { status: 500 });
+        return json(
+          { error: "Failed to share list", action: "share" },
+          { status: 500 },
+        );
       }
     }
 
@@ -149,7 +155,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         });
         return redirect(`/optionsLists/${optionsListId}`);
       } catch (error) {
-        return json({ error: "Failed to update permission", action: "update-permission" }, { status: 500 });
+        return json(
+          { error: "Failed to update permission", action: "update-permission" },
+          { status: 500 },
+        );
       }
     }
 
@@ -164,9 +173,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           optionsListId,
           sharedWithUserId,
         });
-        return json({ success: "User removed from shared list", action: "unshare" });
+        return json({
+          success: "User removed from shared list",
+          action: "unshare",
+        });
       } catch (error) {
-        return json({ error: "Failed to unshare list", action: "unshare" }, { status: 500 });
+        return json(
+          { error: "Failed to unshare list", action: "unshare" },
+          { status: 500 },
+        );
       }
     }
   }
@@ -204,7 +219,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return redirect(`/optionsLists/${optionsListId}`);
       } catch (error) {
         if (error instanceof OptionNameConflictError) {
-          return json({ error: error.message, action: "option.create" }, { status: 409 });
+          return json(
+            { error: error.message, action: "option.create" },
+            { status: 409 },
+          );
         }
         throw error;
       }
@@ -227,7 +245,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return redirect(`/optionsLists/${optionsListId}`);
       } catch (error) {
         if (error instanceof OptionNameConflictError) {
-          return json({ error: error.message, action: "option.update" }, { status: 409 });
+          return json(
+            { error: error.message, action: "option.update" },
+            { status: 409 },
+          );
         }
         throw error;
       }
@@ -251,7 +272,9 @@ export default function OptionsListDetailsPage() {
   const actionData = useActionData<{ error?: string; action?: string }>();
 
   // Filter errors by action type to avoid conflicts
-  const optionError = actionData?.action?.startsWith("option.") ? actionData.error : undefined;
+  const optionError = actionData?.action?.startsWith("option.")
+    ? actionData.error
+    : undefined;
 
   // Track route performance
   useEffect(() => {
@@ -299,7 +322,10 @@ export default function OptionsListDetailsPage() {
         </div>
 
         {optionError ? (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" data-testid="option-error-message">
+          <div
+            className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"
+            data-testid="option-error-message"
+          >
             {optionError}
           </div>
         ) : null}

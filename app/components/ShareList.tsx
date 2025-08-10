@@ -14,11 +14,21 @@ export default function ShareList({
   sharedUsers,
   userShares = [],
 }: ShareListProps) {
-  const actionData = useActionData<{ error?: string; success?: string; action?: string }>();
+  const actionData = useActionData<{
+    error?: string;
+    success?: string;
+    action?: string;
+  }>();
 
   // Only show errors that are not from option actions
-  const sharingError = actionData?.error && !actionData.action?.startsWith("option.") ? actionData.error : undefined;
-  const sharingSuccess = actionData?.success && !actionData.action?.startsWith("option.") ? actionData.success : undefined;
+  const sharingError =
+    actionData?.error && !actionData.action?.startsWith("option.")
+      ? actionData.error
+      : undefined;
+  const sharingSuccess =
+    actionData?.success && !actionData.action?.startsWith("option.")
+      ? actionData.success
+      : undefined;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const [email, setEmail] = useState("");
