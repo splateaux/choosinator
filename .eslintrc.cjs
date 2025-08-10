@@ -7,6 +7,7 @@
 /** @type {import('eslint').Linter.Config} */
 module.exports = {
   root: true,
+  ignorePatterns: ["playwright-report/**/*", "test-results/**/*"],
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",

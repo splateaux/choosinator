@@ -21,6 +21,11 @@ export default {
         path.relative(appDir, "tests/support/test-routes/create-user.ts"),
       );
 
+      route(
+        "tests/create-user-only",
+        path.relative(appDir, "tests/support/test-routes/create-user-only.ts"),
+      );
+
       // dev-auto-login route removed; seeding handled by Architect Sandbox
     }),
 };

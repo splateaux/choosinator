@@ -37,15 +37,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Get shared users if this user is the owner
   let sharedUsers: User[] = [];
   if (optionsList.ownerUserId === userId) {
-    try {
-      sharedUsers = await getSharedUsersForOptionsList({
-        optionsListId: params.optionsListId,
-        ownerUserId: userId,
-      });
-    } catch (error) {
-      // If the sharing table doesn't exist yet, just return empty shared users
-      console.log("Sharing table not available yet:", error);
-    }
+    sharedUsers = await getSharedUsersForOptionsList({
+      optionsListId: params.optionsListId,
+      ownerUserId: userId,
+    });
   }
 
   return json({ optionsList, sharedUsers, currentUserId: userId });

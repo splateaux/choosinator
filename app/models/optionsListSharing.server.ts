@@ -90,7 +90,7 @@ export async function getSharedOptionsListsForUser(
       const db = await arc.tables();
 
       const results = await db.optionsListSharing.query({
-        IndexName: "sharedWithUserId-index",
+        IndexName: "sharedWithUserId-optionsListId-index",
         KeyConditionExpression: "sharedWithUserId = :sharedWithUserId",
         ExpressionAttributeValues: {
           ":sharedWithUserId": userId,
@@ -118,8 +118,8 @@ export async function getSharedUsersForOptionsList({
       const db = await arc.tables();
 
       const results = await db.optionsListSharing.query({
-        KeyConditionExpression: "userId = :ownerUserId",
-        FilterExpression: "optionsListId = :optionsListId",
+        KeyConditionExpression:
+          "userId = :ownerUserId AND optionsListId = :optionsListId",
         ExpressionAttributeValues: {
           ":ownerUserId": ownerUserId,
           ":optionsListId": optionsListId,
@@ -155,9 +155,9 @@ export async function isOptionsListSharedWithUser({
       const db = await arc.tables();
 
       const results = await db.optionsListSharing.query({
-        IndexName: "sharedWithUserId-index",
-        KeyConditionExpression: "sharedWithUserId = :sharedWithUserId",
-        FilterExpression: "optionsListId = :optionsListId",
+        IndexName: "sharedWithUserId-optionsListId-index",
+        KeyConditionExpression:
+          "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
         ExpressionAttributeValues: {
           ":sharedWithUserId": sharedWithUserId,
           ":optionsListId": optionsListId,

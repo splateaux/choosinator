@@ -128,26 +128,21 @@ export async function getOptionsListsForUser(
       // Get owned lists
       const owned = await getOptionsListsByOwner(userId);
 
-      // Get shared lists - handle case where table doesn't exist yet
-      const shared: OptionsList[] = [];
-      try {
-        const { getSharedOptionsListsForUser } = await import(
-          "./optionsListSharing.server"
-        );
-        const sharedSharingRecords = await getSharedOptionsListsForUser(userId);
+      // Get shared lists
+      const { getSharedOptionsListsForUser } = await import(
+        "./optionsListSharing.server"
+      );
+      const sharedSharingRecords = await getSharedOptionsListsForUser(userId);
 
-        for (const sharingRecord of sharedSharingRecords) {
-          const list = await getOptionsList({
-            id: sharingRecord.optionsListId,
-            ownerUserId: sharingRecord.ownerUserId,
-          });
-          if (list) {
-            shared.push(list);
-          }
+      const shared: OptionsList[] = [];
+      for (const sharingRecord of sharedSharingRecords) {
+        const list = await getOptionsList({
+          id: sharingRecord.optionsListId,
+          ownerUserId: sharingRecord.ownerUserId,
+        });
+        if (list) {
+          shared.push(list);
         }
-      } catch (error) {
-        // If the sharing table doesn't exist yet, just return empty shared lists
-        console.log("Sharing table not available yet:", error);
       }
 
       return { owned, shared };

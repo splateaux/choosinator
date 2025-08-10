@@ -112,7 +112,7 @@ vi.mock("@architect/functions", () => {
           },
           query: async (params: any) => {
             let Items = sharingRows;
-            if (params.IndexName === "sharedWithUserId-index") {
+            if (params.IndexName === "sharedWithUserId") {
               const v = params.ExpressionAttributeValues[":sharedWithUserId"];
               Items = Items.filter((r) => r.sharedWithUserId === v);
             }

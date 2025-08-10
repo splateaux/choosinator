@@ -33,7 +33,7 @@ optionsList
 
 option
   optionsListId *String
-  optionsId **String 
+  optionId **String 
 
 optionsListSharing
   userId *String 
@@ -41,9 +41,10 @@ optionsListSharing
   sharedWithUserId String
   createdAt String
 
-@indexes
+@tables-indexes
 optionsList
   optionsListId *String
 
 optionsListSharing
   sharedWithUserId *String
+  optionsListId **String
