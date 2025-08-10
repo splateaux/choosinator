@@ -4,6 +4,7 @@ import {
   isRouteErrorResponse,
   useLoaderData,
   useRouteError,
+  useActionData,
 } from "@remix-run/react";
 import { useEffect } from "react";
 import invariant from "tiny-invariant";
@@ -14,6 +15,7 @@ import {
   createOption,
   updateOption,
   deleteOption,
+  OptionNameConflictError,
 } from "~/models/option.server";
 import {
   getOptionsList,
@@ -105,12 +107,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       // Find the user to share with
       const userToShareWith = await getUserByEmail(email);
       if (!userToShareWith) {
-        return json({ error: "User not found" }, { status: 404 });
+        return json({ error: "User not found", action: "share" }, { status: 404 });
       }
 
       if (userToShareWith.id === userId) {
         return json(
-          { error: "You cannot share a list with yourself" },
+          { error: "You cannot share a list with yourself", action: "share" },
           { status: 400 },
         );
       }
@@ -122,9 +124,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           sharedWithUserId: userToShareWith.id,
           permission: permission === "view" ? "view" : "edit",
         });
-        return json({ success: `List shared with ${email}` });
+        return json({ success: `List shared with ${email}`, action: "share" });
       } catch (error) {
-        return json({ error: "Failed to share list" }, { status: 500 });
+        return json({ error: "Failed to share list", action: "share" }, { status: 500 });
       }
     }
 
@@ -147,7 +149,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         });
         return redirect(`/optionsLists/${optionsListId}`);
       } catch (error) {
-        return json({ error: "Failed to update permission" }, { status: 500 });
+        return json({ error: "Failed to update permission", action: "update-permission" }, { status: 500 });
       }
     }
 
@@ -162,9 +164,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           optionsListId,
           sharedWithUserId,
         });
-        return json({ success: "User removed from shared list" });
+        return json({ success: "User removed from shared list", action: "unshare" });
       } catch (error) {
-        return json({ error: "Failed to unshare list" }, { status: 500 });
+        return json({ error: "Failed to unshare list", action: "unshare" }, { status: 500 });
       }
     }
   }
@@ -197,8 +199,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       if (!name) {
         return json({ error: "Name is required" }, { status: 400 });
       }
-      await createOption({ optionsListId, name, description });
-      return redirect(`/optionsLists/${optionsListId}`);
+      try {
+        await createOption({ optionsListId, name, description });
+        return redirect(`/optionsLists/${optionsListId}`);
+      } catch (error) {
+        if (error instanceof OptionNameConflictError) {
+          return json({ error: error.message, action: "option.create" }, { status: 409 });
+        }
+        throw error;
+      }
     }
 
     if (action === "option.update") {
@@ -213,8 +222,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       if (!name) {
         return json({ error: "Name is required" }, { status: 400 });
       }
-      await updateOption({ optionsListId, id, name, description });
-      return redirect(`/optionsLists/${optionsListId}`);
+      try {
+        await updateOption({ optionsListId, id, name, description });
+        return redirect(`/optionsLists/${optionsListId}`);
+      } catch (error) {
+        if (error instanceof OptionNameConflictError) {
+          return json({ error: error.message, action: "option.update" }, { status: 409 });
+        }
+        throw error;
+      }
     }
 
     if (action === "option.delete") {
@@ -232,6 +248,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 export default function OptionsListDetailsPage() {
   const data = useLoaderData<typeof loader>();
+  const actionData = useActionData<{ error?: string; action?: string }>();
+
+  // Filter errors by action type to avoid conflicts
+  const optionError = actionData?.action?.startsWith("option.") ? actionData.error : undefined;
 
   // Track route performance
   useEffect(() => {
@@ -277,6 +297,12 @@ export default function OptionsListDetailsPage() {
             </span>
           ) : null}
         </div>
+
+        {optionError ? (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" data-testid="option-error-message">
+            {optionError}
+          </div>
+        ) : null}
 
         {data.canEdit ? (
           <form method="post" className="mb-4 grid gap-2 sm:grid-cols-3">

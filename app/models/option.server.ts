@@ -10,6 +10,39 @@ export interface OptionItem {
   description: string;
 }
 
+export class OptionNameConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OptionNameConflictError";
+  }
+}
+
+async function checkOptionNameConflict(
+  optionsListId: string,
+  name: string,
+  excludeOptionId?: string,
+): Promise<void> {
+  const db = await arc.tables();
+  const result = await db.option.query({
+    KeyConditionExpression: "optionsListId = :optionsListId",
+    ExpressionAttributeValues: {
+      ":optionsListId": optionsListId,
+    },
+  });
+
+  const conflictingOption = (result.Items || []).find(
+    (item) =>
+      item.name?.toLowerCase() === name.toLowerCase() &&
+      item.optionId !== excludeOptionId,
+  );
+
+  if (conflictingOption) {
+    throw new OptionNameConflictError(
+      `An option with the name "${name}" already exists in this list.`,
+    );
+  }
+}
+
 export async function getOptionsForList(
   optionsListId: string,
 ): Promise<OptionItem[]> {
@@ -54,6 +87,8 @@ export async function createOption({
   OptionItem,
   "optionsListId" | "name" | "description"
 >): Promise<OptionItem> {
+  await checkOptionNameConflict(optionsListId, name);
+
   const db = await arc.tables();
   const optionId = createId();
 
@@ -88,6 +123,10 @@ export async function updateOption({
   // Read current
   const current = await db.option.get({ optionsListId, optionId: id });
   if (!current) return null;
+
+  if (name) {
+    await checkOptionNameConflict(optionsListId, name, id);
+  }
 
   const next = {
     ...current,
