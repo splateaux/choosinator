@@ -105,26 +105,33 @@ export default function ShareList({
                 <span className="text-sm text-gray-900">
                   {user.email}
                   {userShares.length > 0 ? (
-                    <span className="ml-2 text-gray-500">(
-                      {
-                        userShares.find((s) => s.user.id === user.id)?.permission ===
-                          "view"
-                          ? "View"
-                          : "Edit"
-                      }
+                    <span className="ml-2 text-gray-500">
+                      (
+                      {userShares.find((s) => s.user.id === user.id)
+                        ?.permission === "view"
+                        ? "View"
+                        : "Edit"}
                       )
                     </span>
                   ) : null}
                 </span>
                 <Form method="post" className="inline flex items-center gap-2">
-                  <input type="hidden" name="optionsListId" value={optionsListId} />
-                  <input type="hidden" name="sharedWithUserId" value={user.id} />
+                  <input
+                    type="hidden"
+                    name="optionsListId"
+                    value={optionsListId}
+                  />
+                  <input
+                    type="hidden"
+                    name="sharedWithUserId"
+                    value={user.id}
+                  />
                   <select
                     name="permission"
                     data-testid="existing-user-permission-select"
                     defaultValue={
-                      userShares.find((s) => s.user.id === user.id)?.permission ||
-                      "edit"
+                      userShares.find((s) => s.user.id === user.id)
+                        ?.permission || "edit"
                     }
                     className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >

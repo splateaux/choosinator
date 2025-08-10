@@ -219,16 +219,13 @@ export async function isOptionsListSharedWithUser({
 export async function getShareRecordForUser({
   optionsListId,
   sharedWithUserId,
-}: Pick<OptionsListSharing, "optionsListId" | "sharedWithUserId">): Promise<
-  | {
-    optionsListId: string;
-    ownerUserId: string;
-    sharedWithUserId: string;
-    permission: "view" | "edit";
-    createdAt: string;
-  }
-  | null
-> {
+}: Pick<OptionsListSharing, "optionsListId" | "sharedWithUserId">): Promise<{
+  optionsListId: string;
+  ownerUserId: string;
+  sharedWithUserId: string;
+  permission: "view" | "edit";
+  createdAt: string;
+} | null> {
   return PerformanceMonitor.measureAsync(
     `DB: getShareRecordForUser(${optionsListId}, ${sharedWithUserId})`,
     async () => {
@@ -290,7 +287,8 @@ export async function updateSharePermission({
       // Find existing record using the sharedWithUserId index
       const results = await db.optionsListSharing.query({
         IndexName: "sharedWithUserId-optionsListId-index",
-        KeyConditionExpression: "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
+        KeyConditionExpression:
+          "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
         ExpressionAttributeValues: {
           ":sharedWithUserId": sharedWithUserId,
           ":optionsListId": optionsListId,
@@ -302,10 +300,12 @@ export async function updateSharePermission({
       }
 
       const sharingRecord = results.Items[0];
-      
+
       // Verify this record belongs to the owner
       if (sharingRecord.userId !== ownerUserId) {
-        throw new Error("Unauthorized: You can only update permissions for lists you own");
+        throw new Error(
+          "Unauthorized: You can only update permissions for lists you own",
+        );
       }
 
       await db.optionsListSharing.put({

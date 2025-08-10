@@ -107,7 +107,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const sharedWithUserId = formData.get("sharedWithUserId") as User["id"];
     const permission = formData.get("permission") as string;
     if (!sharedWithUserId || !permission) {
-      return json({ error: "User ID and permission are required" }, { status: 400 });
+      return json(
+        { error: "User ID and permission are required" },
+        { status: 400 },
+      );
     }
 
     try {
@@ -163,9 +166,13 @@ export default function OptionsListDetailsPage() {
             <span className="text-sm text-gray-500">
               Shared by {data.optionsList.ownerUserId}
             </span>
-            {'permission' in data.optionsList ? <span className="text-xs text-gray-600 font-medium px-2 py-1 bg-gray-100 rounded">
-                {data.optionsList.permission === "view" ? "View Only" : "Can Edit"}
-              </span> : null}
+            {"permission" in data.optionsList ? (
+              <span className="text-xs text-gray-600 font-medium px-2 py-1 bg-gray-100 rounded">
+                {data.optionsList.permission === "view"
+                  ? "View Only"
+                  : "Can Edit"}
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>

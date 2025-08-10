@@ -98,15 +98,16 @@ vi.mock("@architect/functions", () => {
             // Ensure permission has a default value
             const itemWithPermission = {
               ...item,
-              permission: item.permission || "edit"
+              permission: item.permission || "edit",
             };
 
             // Check if item already exists and update it, otherwise add new
             // The key is userId + optionsListId + sharedWithUserId
             const existingIndex = sharingRows.findIndex(
-              (r) => r.userId === item.userId &&
+              (r) =>
+                r.userId === item.userId &&
                 r.optionsListId === item.optionsListId &&
-                r.sharedWithUserId === item.sharedWithUserId
+                r.sharedWithUserId === item.sharedWithUserId,
             );
 
             if (existingIndex >= 0) {
@@ -114,8 +115,6 @@ vi.mock("@architect/functions", () => {
             } else {
               sharingRows.push(itemWithPermission);
             }
-
-
 
             return itemWithPermission;
           },
@@ -136,12 +135,20 @@ vi.mock("@architect/functions", () => {
             let Items = sharingRows;
 
             if (params.IndexName === "sharedWithUserId-optionsListId-index") {
-              const sharedWithUserId = params.ExpressionAttributeValues[":sharedWithUserId"];
-              Items = Items.filter((r) => r.sharedWithUserId === sharedWithUserId);
+              const sharedWithUserId =
+                params.ExpressionAttributeValues[":sharedWithUserId"];
+              Items = Items.filter(
+                (r) => r.sharedWithUserId === sharedWithUserId,
+              );
 
               // If optionsListId is also provided in KeyConditionExpression, filter by it too
-              if (params.KeyConditionExpression?.includes("optionsListId = :optionsListId")) {
-                const optionsListId = params.ExpressionAttributeValues[":optionsListId"];
+              if (
+                params.KeyConditionExpression?.includes(
+                  "optionsListId = :optionsListId",
+                )
+              ) {
+                const optionsListId =
+                  params.ExpressionAttributeValues[":optionsListId"];
                 Items = Items.filter((r) => r.optionsListId === optionsListId);
               }
             } else if (params.IndexName === "sharedWithUserId") {
@@ -155,8 +162,13 @@ vi.mock("@architect/functions", () => {
               Items = Items.filter((r) => r.userId === v);
 
               // If optionsListId is also in KeyConditionExpression, filter by it too
-              if (params.KeyConditionExpression?.includes("optionsListId = :optionsListId")) {
-                const optionsListId = params.ExpressionAttributeValues[":optionsListId"];
+              if (
+                params.KeyConditionExpression?.includes(
+                  "optionsListId = :optionsListId",
+                )
+              ) {
+                const optionsListId =
+                  params.ExpressionAttributeValues[":optionsListId"];
                 Items = Items.filter((r) => r.optionsListId === optionsListId);
               }
             }

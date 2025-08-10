@@ -75,7 +75,9 @@ export default function OptionsListsPage() {
                           <div className="flex items-center justify-between">
                             <span>👥 {optionList.name}</span>
                             <span className="text-xs text-gray-500 font-medium px-2 py-1 bg-gray-100 rounded">
-                              {optionList.permission === "view" ? "View" : "Edit"}
+                              {optionList.permission === "view"
+                                ? "View"
+                                : "Edit"}
                             </span>
                           </div>
                         </NavLink>
