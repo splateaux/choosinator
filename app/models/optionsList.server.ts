@@ -138,6 +138,11 @@ export async function getOptionsListsForUser(
         "./optionsListSharing.server"
       );
       const sharedSharingRecords = await getSharedOptionsListsForUser(userId);
+      // Get shared lists
+      const { getSharedOptionsListsForUser } = await import(
+        "./optionsListSharing.server"
+      );
+      const sharedSharingRecords = await getSharedOptionsListsForUser(userId);
 
       const shared: SharedOptionsList[] = [];
       for (const sharingRecord of sharedSharingRecords) {
