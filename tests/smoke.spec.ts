@@ -2,7 +2,9 @@ import { faker } from "@faker-js/faker";
 import { test, expect } from "@playwright/test";
 
 test.describe("Smoke Test", () => {
-  test("should verify core application functionality works end-to-end", async ({ page }) => {
+  test("should verify core application functionality works end-to-end", async ({
+    page,
+  }) => {
     const testEmail = `${faker.internet.userName()}@example.com`;
     const testPassword = faker.internet.password({ length: 12 });
     const listName = `Smoke Test List ${faker.word.noun()}`;
@@ -24,7 +26,9 @@ test.describe("Smoke Test", () => {
     await page.getByRole("button", { name: /save/i }).click();
 
     // Verify list was created successfully
-    await page.waitForURL(/\/optionsLists\/[^/]+$/, { waitUntil: "networkidle" });
+    await page.waitForURL(/\/optionsLists\/[^/]+$/, {
+      waitUntil: "networkidle",
+    });
     await expect(page.getByRole("heading", { name: listName })).toBeVisible();
 
     // Verify basic sharing UI is present (owner permissions)
@@ -45,11 +49,15 @@ test.describe("Smoke Test", () => {
 
     // Verify list persistence and access (user should be on /optionsLists after login)
     await expect(page).toHaveURL(/\/optionsLists/);
-    await expect(page.getByRole("link", { name: new RegExp(listName) })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: new RegExp(listName) }),
+    ).toBeVisible();
 
     // Final verification - can access the list
     await page.getByRole("link", { name: new RegExp(listName) }).click();
-    await page.waitForURL(/\/optionsLists\/[^/]+$/, { waitUntil: "networkidle" });
+    await page.waitForURL(/\/optionsLists\/[^/]+$/, {
+      waitUntil: "networkidle",
+    });
     await expect(page.getByRole("heading", { name: listName })).toBeVisible();
   });
 });
