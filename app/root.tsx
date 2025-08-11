@@ -29,7 +29,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 const ThemeContext = createContext({
   theme: "light-mode",
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  toggleTheme: () => { },
+  toggleTheme: () => {},
 });
 
 export function useTheme() {
