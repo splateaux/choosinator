@@ -42,6 +42,13 @@ optionsListSharing
   permission String
   createdAt String
 
+poll
+  pollId *String
+  optionsListId String
+  name String
+  createdByUserId String
+  createdAt String  
+
 @tables-indexes
 optionsListSharing
   sharedWithUserId *String

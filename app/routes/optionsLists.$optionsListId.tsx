@@ -5,6 +5,8 @@ import {
   useLoaderData,
   useRouteError,
   useActionData,
+  Outlet,
+  Link,
 } from "@remix-run/react";
 import { useEffect } from "react";
 import invariant from "tiny-invariant";
@@ -285,6 +287,9 @@ export default function OptionsListDetailsPage() {
 
   return (
     <div>
+      {/* Nested routes render here, e.g., /optionsLists/:id/polls/new */}
+      <Outlet />
+
       <div className="flex items-center justify-between">
         <h3 className="text-2xl font-bold">{data.optionsList.name}</h3>
         {!isOwner ? (
@@ -311,14 +316,22 @@ export default function OptionsListDetailsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-lg font-semibold">Options</h4>
-          {!data.canEdit ? (
-            <span
-              className="text-xs text-gray-500"
-              data-testid="options-view-only"
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/optionsLists/${data.optionsList.id}/polls/new`}
+              className="text-sm rounded bg-purple-600 px-3 py-1 text-white hover:bg-purple-700"
             >
-              View Only
-            </span>
-          ) : null}
+              Create Poll
+            </Link>
+            {!data.canEdit ? (
+              <span
+                className="text-xs text-gray-500"
+                data-testid="options-view-only"
+              >
+                View Only
+              </span>
+            ) : null}
+          </div>
         </div>
 
         {optionError ? (
@@ -448,23 +461,6 @@ export default function OptionsListDetailsPage() {
             userShares={data.userShares}
           />
         </div>
-      ) : null}
-
-      {process.env.NODE_ENV === "development" ? (
-        <details className="mt-4 text-xs text-gray-500">
-          <summary>🔍 Debug Info</summary>
-          <pre className="mt-2 bg-gray-100 p-2 rounded">
-            Options List ID: {data.optionsList.id}
-            {"\n"}
-            Owner: {data.optionsList.ownerUserId}
-            {"\n"}
-            Current User: {data.currentUserId}
-            {"\n"}
-            Is Owner: {isOwner.toString()}
-            {"\n"}
-            Loaded at: {new Date().toISOString()}
-          </pre>
-        </details>
       ) : null}
     </div>
   );
