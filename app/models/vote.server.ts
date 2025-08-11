@@ -106,7 +106,9 @@ export interface PollVotesSummary {
 /**
  * Returns a breakdown of tokens by option and by user for an entire poll.
  */
-export async function getVotesForPoll(pollId: string): Promise<PollVotesSummary> {
+export async function getVotesForPoll(
+  pollId: string,
+): Promise<PollVotesSummary> {
   const db = await arc.tables();
   const pk = `POLL#${pollId}`;
   const result = await db.pollVote.query({

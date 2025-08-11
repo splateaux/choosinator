@@ -1,6 +1,12 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, useActionData, useFetcher, useLoaderData, useRevalidator } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useFetcher,
+  useLoaderData,
+  useRevalidator,
+} from "@remix-run/react";
 import { useEffect, useRef } from "react";
 import invariant from "tiny-invariant";
 
@@ -30,7 +36,15 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const session = await getSession(request);
   const voterId = userId ?? `session#${session.id}`;
   const votes = await getVotesForPoll(poll.id);
-  return json({ poll, options, userId, guestName, voterId, votes, maxTokens: MAX_TOKENS_PER_USER });
+  return json({
+    poll,
+    options,
+    userId,
+    guestName,
+    voterId,
+    votes,
+    maxTokens: MAX_TOKENS_PER_USER,
+  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -39,7 +53,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "guestName") {
     const guestName = (formData.get("guestName") as string) || "";
     if (!guestName.trim()) {
-      return json({ error: "Name is required to continue as Guest" }, { status: 400 });
+      return json(
+        { error: "Name is required to continue as Guest" },
+        { status: 400 },
+      );
     }
     return setGuestNameSession({
       request,
@@ -52,7 +69,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const pollId = formData.get("pollId") as string;
     const optionId = formData.get("optionId") as string;
     const delta = Number(formData.get("delta"));
-    const userId = (await getUserId(request)) ?? `session#${(await getSession(request)).id}`;
+    const userId =
+      (await getUserId(request)) ?? `session#${(await getSession(request)).id}`;
     invariant(pollId, "pollId missing");
     invariant(optionId, "optionId missing");
     invariant(!Number.isNaN(delta), "delta missing");
@@ -171,7 +189,11 @@ export default function PollPublicPage() {
                 className="rounded border px-2 py-1"
                 required
               />
-              <button name="intent" value="guestName" className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700">
+              <button
+                name="intent"
+                value="guestName"
+                className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+              >
                 Continue as Guest
               </button>
             </Form>
@@ -223,9 +245,14 @@ export default function PollPublicPage() {
                     </Form>
                   </div>
                   {opt.description ? (
-                    <div className="text-sm text-gray-600">{opt.description}</div>
+                    <div className="text-sm text-gray-600">
+                      {opt.description}
+                    </div>
                   ) : null}
-                  <div className="h-3 w-full bg-gray-200 rounded overflow-hidden" aria-label={`Vote bar for ${opt.name}`}>
+                  <div
+                    className="h-3 w-full bg-gray-200 rounded overflow-hidden"
+                    aria-label={`Vote bar for ${opt.name}`}
+                  >
                     <div className="flex h-full w-full">
                       {segments.length === 0 ? (
                         <div className="h-full w-0" />
@@ -234,7 +261,11 @@ export default function PollPublicPage() {
                           const color = userIdToColor(uid);
                           const w = total > 0 ? (count / total) * 100 : 0;
                           return (
-                            <div key={uid} className="h-full" style={{ width: `${w}%`, backgroundColor: color }} />
+                            <div
+                              key={uid}
+                              className="h-full"
+                              style={{ width: `${w}%`, backgroundColor: color }}
+                            />
                           );
                         })
                       )}
@@ -249,7 +280,14 @@ export default function PollPublicPage() {
       </section>
 
       <section className="mt-4">
-        <div className="text-sm">Remaining balance: {Math.max(0, data.maxTokens - (data.votes.totalsByUser[data.voterId] || 0))} tokens</div>
+        <div className="text-sm">
+          Remaining balance:{" "}
+          {Math.max(
+            0,
+            data.maxTokens - (data.votes.totalsByUser[data.voterId] || 0),
+          )}{" "}
+          tokens
+        </div>
       </section>
 
       <section className="mt-8">
