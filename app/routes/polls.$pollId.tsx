@@ -68,7 +68,6 @@ export default function PollPublicPage() {
   const lastSubmitRef = useRef(0);
 
   // Heartbeat to announce presence and poll participants periodically
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const pollId = data.poll.id;
     // Initial announce + initial list load
@@ -93,6 +92,14 @@ export default function PollPublicPage() {
       clearInterval(heartbeat);
     };
   }, [data.poll.id]);
+
+  // Track fetcher completion to update submission flags
+  useEffect(() => {
+    if (presenceFetcher.state === "idle") {
+      isSubmittingRef.current = false;
+      lastSubmitRef.current = Date.now();
+    }
+  }, [presenceFetcher.state]);
 
   // Track fetcher completion to update submission flags
   useEffect(() => {
