@@ -2,13 +2,12 @@ import arc from "@architect/functions";
 import { createId } from "@paralleldrive/cuid2";
 
 import type { OptionsList } from "./optionsList.server";
-import type { User } from "./user.server";
 
 export interface Poll {
   id: string;
   optionsListId: OptionsList["id"];
   name: string;
-  createdByUserId: User["id"]; // can be empty string for guest-created if needed later
+  createdByUserId: string; // user id like `email#...` or empty for guests
   createdAt: string;
 }
 

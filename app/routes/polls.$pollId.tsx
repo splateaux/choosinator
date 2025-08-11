@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { Form, useActionData, useFetcher, useLoaderData } from "@remix-run/react";
+import { useEffect } from "react";
 import invariant from "tiny-invariant";
 
 import { getOptionsForList } from "~/models/option.server";
@@ -36,9 +37,46 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
 };
 
+// Avoid revalidating this route's loader on presence heartbeats
+export function shouldRevalidate(args: {
+  formAction?: string;
+  formMethod?: string;
+}) {
+  const { formAction, formMethod } = args;
+  if (formMethod?.toLowerCase() === "post" && formAction?.endsWith("/presence")) {
+    return false;
+  }
+  return true;
+}
+
 export default function PollPublicPage() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const presenceFetcher = useFetcher<{
+    participants: { clientId: string; displayName: string }[];
+  }>();
+
+  // Heartbeat to announce presence and poll participants periodically
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const pollId = data.poll.id;
+    // Initial announce + initial list load
+    presenceFetcher.submit(null, {
+      method: "post",
+      action: `/polls/${pollId}/presence`,
+    });
+
+    const heartbeat = setInterval(() => {
+      presenceFetcher.submit(null, {
+        method: "post",
+        action: `/polls/${pollId}/presence`,
+      });
+    }, 10_000);
+
+    return () => {
+      clearInterval(heartbeat);
+    };
+  }, [data.poll.id, presenceFetcher]);
 
   return (
     <div className="max-w-2xl">
@@ -103,6 +141,25 @@ export default function PollPublicPage() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-xl font-semibold mb-2">People here now</h2>
+        {presenceFetcher.data ? (
+          presenceFetcher.data.participants.length === 0 ? (
+            <p className="text-sm text-gray-500">Nobody else is here yet.</p>
+          ) : (
+            <ul className="rounded border divide-y" data-testid="participants-list">
+              {presenceFetcher.data.participants.map((p) => (
+                <li key={p.clientId} className="p-2 text-sm">
+                  {p.displayName}
+                </li>
+              ))}
+            </ul>
+          )
+        ) : (
+          <p className="text-sm text-gray-500">Loading participants…</p>
         )}
       </section>
     </div>

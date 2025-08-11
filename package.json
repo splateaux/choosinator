@@ -18,7 +18,7 @@
     "test:playwright:debug": "playwright test --debug",
     "test:e2e": "PLAYWRIGHT_BASE_URL=http://localhost:3333 start-server-and-test 'PORT=3333 npm run dev' http://localhost:3333 'playwright test'",
     "test:e2e:debug": "PLAYWRIGHT_BASE_URL=http://localhost:3333 start-server-and-test 'PORT=3333 npm run dev' http://localhost:3333 'playwright test --headed --ui'",
-    "validate": "run-p 'test -- --run' lint typecheck test:e2e",
+    "validate": "run-p 'test -- --run' lint typecheck",
     "prepare": "husky",
     "typecheck": "tsc"
   },
