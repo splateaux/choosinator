@@ -29,7 +29,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
   // Set guest name in session and remain on the poll page
-  return setGuestNameSession({ request, guestName, redirectTo: new URL(request.url).pathname });
+  return setGuestNameSession({
+    request,
+    guestName,
+    redirectTo: new URL(request.url).pathname,
+  });
 };
 
 export default function PollPublicPage() {
@@ -50,7 +54,8 @@ export default function PollPublicPage() {
         </div>
       ) : data.guestName ? (
         <div className="mb-4 p-3 rounded bg-blue-50 text-blue-800 text-sm">
-          Participating as guest: <span className="font-medium">{data.guestName}</span>
+          Participating as guest:{" "}
+          <span className="font-medium">{data.guestName}</span>
         </div>
       ) : (
         <div className="mb-6 grid gap-3">
