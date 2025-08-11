@@ -6,7 +6,7 @@ import {
   useFetcher,
   useLoaderData,
 } from "@remix-run/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import invariant from "tiny-invariant";
 
 import { getOptionsForList } from "~/models/option.server";
@@ -64,18 +64,25 @@ export default function PollPublicPage() {
     participants: { clientId: string; displayName: string }[];
   }>();
 
+  const isSubmittingRef = useRef(false);
+  const lastSubmitRef = useRef(0);
+
   // Heartbeat to announce presence and poll participants periodically
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const pollId = data.poll.id;
     // Initial announce + initial list load
-    presenceFetcher.submit(null, {
+    isSubmittingRef.current = true;
+    presenceFetcher.submit(new FormData(), {
       method: "post",
       action: `/polls/${pollId}/presence`,
     });
 
     const heartbeat = setInterval(() => {
-      presenceFetcher.submit(null, {
+      const now = Date.now();
+      if (isSubmittingRef.current) return;
+      if (now - lastSubmitRef.current < 9000) return; // throttle
+      isSubmittingRef.current = true;
+      presenceFetcher.submit(new FormData(), {
         method: "post",
         action: `/polls/${pollId}/presence`,
       });
@@ -85,6 +92,14 @@ export default function PollPublicPage() {
       clearInterval(heartbeat);
     };
   }, [data.poll.id, presenceFetcher]);
+
+  // Track fetcher completion to update submission flags
+  useEffect(() => {
+    if (presenceFetcher.state === "idle") {
+      isSubmittingRef.current = false;
+      lastSubmitRef.current = Date.now();
+    }
+  }, [presenceFetcher.state]);
 
   return (
     <div className="max-w-2xl">
