@@ -65,17 +65,19 @@ export default function PollPublicPage() {
   }>();
 
   // Heartbeat to announce presence and poll participants periodically
+  // Intentionally depend ONLY on poll id; fetcher identity changes will retrigger this effect
+  // and create runaway intervals. This is safe because we always target the current poll id.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const pollId = data.poll.id;
     // Initial announce + initial list load
-    presenceFetcher.submit(null, {
+    presenceFetcher.submit(new FormData(), {
       method: "post",
       action: `/polls/${pollId}/presence`,
     });
 
     const heartbeat = setInterval(() => {
-      presenceFetcher.submit(null, {
+      presenceFetcher.submit(new FormData(), {
         method: "post",
         action: `/polls/${pollId}/presence`,
       });
@@ -84,7 +86,7 @@ export default function PollPublicPage() {
     return () => {
       clearInterval(heartbeat);
     };
-  }, [data.poll.id, presenceFetcher]);
+  }, [data.poll.id]);
 
   return (
     <div className="max-w-2xl">

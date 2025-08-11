@@ -35,6 +35,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     {
       headers: {
         "Cache-Control": "no-store",
+        // Always commit the session so the same presenceClientId persists across requests
         "Set-Cookie": await (
           await import("~/session.server")
         ).sessionStorage.commitSession(session),
