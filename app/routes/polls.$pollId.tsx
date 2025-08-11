@@ -1,17 +1,23 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import {
-  Form,
-  useActionData,
-  useFetcher,
-  useLoaderData,
-} from "@remix-run/react";
+import { Form, useActionData, useFetcher, useLoaderData, useRevalidator } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 import invariant from "tiny-invariant";
 
 import { getOptionsForList } from "~/models/option.server";
 import { getPollById } from "~/models/poll.server";
-import { getGuestName, getUserId, setGuestNameSession } from "~/session.server";
+import {
+  adjustVoteTokens,
+  getVotesForPoll,
+  MAX_TOKENS_PER_USER,
+} from "~/models/vote.server";
+import {
+  getGuestName,
+  getUserId,
+  setGuestNameSession,
+  getSession,
+} from "~/session.server";
+import { userIdToColor } from "~/utils/userColor";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariant(params.pollId, "pollId not found");
@@ -21,25 +27,40 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const options = await getOptionsForList(poll.optionsListId);
   const userId = await getUserId(request);
   const guestName = await getGuestName(request);
-  return json({ poll, options, userId, guestName });
+  const session = await getSession(request);
+  const voterId = userId ?? `session#${session.id}`;
+  const votes = await getVotesForPoll(poll.id);
+  return json({ poll, options, userId, guestName, voterId, votes, maxTokens: MAX_TOKENS_PER_USER });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  // Voting not implemented yet per story; handle guest name capture noop
   const formData = await request.formData();
-  const guestName = (formData.get("guestName") as string) || "";
-  if (!guestName.trim()) {
-    return json(
-      { error: "Name is required to continue as Guest" },
-      { status: 400 },
-    );
+  const intent = (formData.get("intent") as string) || "";
+  if (intent === "guestName") {
+    const guestName = (formData.get("guestName") as string) || "";
+    if (!guestName.trim()) {
+      return json({ error: "Name is required to continue as Guest" }, { status: 400 });
+    }
+    return setGuestNameSession({
+      request,
+      guestName,
+      redirectTo: new URL(request.url).pathname,
+    });
   }
-  // Set guest name in session and remain on the poll page
-  return setGuestNameSession({
-    request,
-    guestName,
-    redirectTo: new URL(request.url).pathname,
-  });
+
+  if (intent === "vote.adjust") {
+    const pollId = formData.get("pollId") as string;
+    const optionId = formData.get("optionId") as string;
+    const delta = Number(formData.get("delta"));
+    const userId = (await getUserId(request)) ?? `session#${(await getSession(request)).id}`;
+    invariant(pollId, "pollId missing");
+    invariant(optionId, "optionId missing");
+    invariant(!Number.isNaN(delta), "delta missing");
+    const result = await adjustVoteTokens({ pollId, optionId, userId, delta });
+    return json({ ok: true, ...result });
+  }
+
+  return json({ error: "Unknown action" }, { status: 400 });
 };
 
 // Avoid revalidating this route's loader on presence heartbeats
@@ -63,6 +84,7 @@ export default function PollPublicPage() {
   const presenceFetcher = useFetcher<{
     participants: { clientId: string; displayName: string }[];
   }>();
+  const revalidator = useRevalidator();
 
   const isSubmittingRef = useRef(false);
   const lastSubmitRef = useRef(0);
@@ -91,6 +113,9 @@ export default function PollPublicPage() {
     return () => {
       clearInterval(heartbeat);
     };
+    // We intentionally exclude `presenceFetcher` to avoid recreating the interval
+    // whenever the fetcher state updates, which would cause rapid resubmits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.poll.id]);
 
   // Track fetcher completion to update submission flags
@@ -101,13 +126,15 @@ export default function PollPublicPage() {
     }
   }, [presenceFetcher.state]);
 
-  // Track fetcher completion to update submission flags
+  // Periodically revalidate loader for vote updates
   useEffect(() => {
-    if (presenceFetcher.state === "idle") {
-      isSubmittingRef.current = false;
-      lastSubmitRef.current = Date.now();
-    }
-  }, [presenceFetcher.state]);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      if (revalidator.state !== "idle") return;
+      revalidator.revalidate();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [revalidator]);
 
   return (
     <div className="max-w-2xl">
@@ -144,7 +171,7 @@ export default function PollPublicPage() {
                 className="rounded border px-2 py-1"
                 required
               />
-              <button className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700">
+              <button name="intent" value="guestName" className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700">
                 Continue as Guest
               </button>
             </Form>
@@ -162,17 +189,67 @@ export default function PollPublicPage() {
         {data.options.length === 0 ? (
           <p className="text-sm text-gray-500">No options available.</p>
         ) : (
-          <ul className="divide-y rounded border">
-            {data.options.map((opt) => (
-              <li key={opt.id} className="p-3">
-                <div className="font-medium">{opt.name}</div>
-                {opt.description ? (
-                  <div className="text-sm text-gray-600">{opt.description}</div>
-                ) : null}
-              </li>
-            ))}
+          <ul className="divide-y rounded border" data-testid="options-list">
+            {data.options.map((opt) => {
+              const byUser = data.votes.byOption[opt.id]?.byUser || {};
+              const total = data.votes.byOption[opt.id]?.total || 0;
+              const segments = Object.entries(byUser).filter(([, t]) => t > 0);
+              return (
+                <li key={opt.id} className="p-3 grid gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-medium">{opt.name}</div>
+                    <Form method="post" className="flex items-center gap-2">
+                      <input type="hidden" name="intent" value="vote.adjust" />
+                      <input type="hidden" name="pollId" value={data.poll.id} />
+                      <input type="hidden" name="optionId" value={opt.id} />
+                      <button
+                        type="submit"
+                        name="delta"
+                        value={-1}
+                        className="rounded border px-2 py-1"
+                        aria-label={`Decrease tokens for ${opt.name}`}
+                      >
+                        −
+                      </button>
+                      <button
+                        type="submit"
+                        name="delta"
+                        value={1}
+                        className="rounded border px-2 py-1"
+                        aria-label={`Increase tokens for ${opt.name}`}
+                      >
+                        +
+                      </button>
+                    </Form>
+                  </div>
+                  {opt.description ? (
+                    <div className="text-sm text-gray-600">{opt.description}</div>
+                  ) : null}
+                  <div className="h-3 w-full bg-gray-200 rounded overflow-hidden" aria-label={`Vote bar for ${opt.name}`}>
+                    <div className="flex h-full w-full">
+                      {segments.length === 0 ? (
+                        <div className="h-full w-0" />
+                      ) : (
+                        segments.map(([uid, count]) => {
+                          const color = userIdToColor(uid);
+                          const w = total > 0 ? (count / total) * 100 : 0;
+                          return (
+                            <div key={uid} className="h-full" style={{ width: `${w}%`, backgroundColor: color }} />
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600">{total} tokens</div>
+                </li>
+              );
+            })}
           </ul>
         )}
+      </section>
+
+      <section className="mt-4">
+        <div className="text-sm">Remaining balance: {Math.max(0, data.maxTokens - (data.votes.totalsByUser[data.voterId] || 0))} tokens</div>
       </section>
 
       <section className="mt-8">
