@@ -91,7 +91,15 @@ export default function PollPublicPage() {
     return () => {
       clearInterval(heartbeat);
     };
-  }, [data.poll.id, presenceFetcher]);
+  }, [data.poll.id]);
+
+  // Track fetcher completion to update submission flags
+  useEffect(() => {
+    if (presenceFetcher.state === "idle") {
+      isSubmittingRef.current = false;
+      lastSubmitRef.current = Date.now();
+    }
+  }, [presenceFetcher.state]);
 
   // Track fetcher completion to update submission flags
   useEffect(() => {
