@@ -1,6 +1,11 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, useActionData, useFetcher, useLoaderData } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useFetcher,
+  useLoaderData,
+} from "@remix-run/react";
 import { useEffect } from "react";
 import invariant from "tiny-invariant";
 
@@ -43,7 +48,10 @@ export function shouldRevalidate(args: {
   formMethod?: string;
 }) {
   const { formAction, formMethod } = args;
-  if (formMethod?.toLowerCase() === "post" && formAction?.endsWith("/presence")) {
+  if (
+    formMethod?.toLowerCase() === "post" &&
+    formAction?.endsWith("/presence")
+  ) {
     return false;
   }
   return true;
@@ -150,7 +158,10 @@ export default function PollPublicPage() {
           presenceFetcher.data.participants.length === 0 ? (
             <p className="text-sm text-gray-500">Nobody else is here yet.</p>
           ) : (
-            <ul className="rounded border divide-y" data-testid="participants-list">
+            <ul
+              className="rounded border divide-y"
+              data-testid="participants-list"
+            >
               {presenceFetcher.data.participants.map((p) => (
                 <li key={p.clientId} className="p-2 text-sm">
                   {p.displayName}
