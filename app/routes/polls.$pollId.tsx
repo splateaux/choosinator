@@ -1,11 +1,11 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
 
 import { getOptionsForList } from "~/models/option.server";
 import { getPollById } from "~/models/poll.server";
-import { getUserId } from "~/session.server";
+import { getGuestName, getUserId, setGuestNameSession } from "~/session.server";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariant(params.pollId, "pollId not found");
@@ -14,7 +14,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   const options = await getOptionsForList(poll.optionsListId);
   const userId = await getUserId(request);
-  return json({ poll, options, userId });
+  const guestName = await getGuestName(request);
+  return json({ poll, options, userId, guestName });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -27,12 +28,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       { status: 400 },
     );
   }
-  // For now, do nothing further; page will simply reload
-  return json({ ok: true });
+  // Set guest name in session and remain on the poll page
+  return setGuestNameSession({ request, guestName, redirectTo: new URL(request.url).pathname });
 };
 
 export default function PollPublicPage() {
   const data = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
 
   return (
     <div className="max-w-2xl">
@@ -45,6 +47,10 @@ export default function PollPublicPage() {
       {data.userId ? (
         <div className="mb-4 p-3 rounded bg-green-50 text-green-800 text-sm">
           You are signed in.
+        </div>
+      ) : data.guestName ? (
+        <div className="mb-4 p-3 rounded bg-blue-50 text-blue-800 text-sm">
+          Participating as guest: <span className="font-medium">{data.guestName}</span>
         </div>
       ) : (
         <div className="mb-6 grid gap-3">
@@ -69,6 +75,11 @@ export default function PollPublicPage() {
               </button>
             </Form>
           </div>
+          {actionData?.error ? (
+            <div className="text-sm text-red-700" role="alert">
+              {actionData.error}
+            </div>
+          ) : null}
         </div>
       )}
 

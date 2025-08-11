@@ -7,6 +7,7 @@ import {
   useActionData,
   Outlet,
   Link,
+  useLocation,
 } from "@remix-run/react";
 import { useEffect } from "react";
 import invariant from "tiny-invariant";
@@ -272,6 +273,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 export default function OptionsListDetailsPage() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<{ error?: string; action?: string }>();
+  const location = useLocation();
 
   // Filter errors by action type to avoid conflicts
   const optionError = actionData?.action?.startsWith("option.")
@@ -284,6 +286,8 @@ export default function OptionsListDetailsPage() {
   }, [data.optionsList.id]);
 
   const isOwner = data.optionsList.ownerUserId === data.currentUserId;
+  const creatingPoll =
+    location.pathname === `/optionsLists/${data.optionsList.id}/polls/new`;
 
   return (
     <div>
@@ -312,148 +316,150 @@ export default function OptionsListDetailsPage() {
       </div>
       <hr className="my-4" />
 
-      {/* Options management */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-lg font-semibold">Options</h4>
-          <div className="flex items-center gap-2">
-            <Link
-              to={`/optionsLists/${data.optionsList.id}/polls/new`}
-              className="text-sm rounded bg-purple-600 px-3 py-1 text-white hover:bg-purple-700"
-            >
-              Create Poll
-            </Link>
-            {!data.canEdit ? (
-              <span
-                className="text-xs text-gray-500"
-                data-testid="options-view-only"
+      {/* Options management - hidden while creating a poll */}
+      {!creatingPoll ? (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-lg font-semibold">Options</h4>
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/optionsLists/${data.optionsList.id}/polls/new`}
+                className="text-sm rounded bg-purple-600 px-3 py-1 text-white hover:bg-purple-700"
               >
-                View Only
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        {optionError ? (
-          <div
-            className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"
-            data-testid="option-error-message"
-          >
-            {optionError}
-          </div>
-        ) : null}
-
-        {data.canEdit ? (
-          <form method="post" className="mb-4 grid gap-2 sm:grid-cols-3">
-            <input type="hidden" name="action" value="option.create" />
-            <input
-              name="name"
-              placeholder="Name"
-              aria-label="Option name"
-              className="rounded border px-2 py-1"
-              required
-            />
-            <input
-              name="description"
-              placeholder="Description (optional)"
-              aria-label="Option description"
-              className="rounded border px-2 py-1 sm:col-span-2"
-            />
-            <div>
-              <button
-                type="submit"
-                className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
-              >
-                Add Option
-              </button>
+                Create Poll
+              </Link>
+              {!data.canEdit ? (
+                <span
+                  className="text-xs text-gray-500"
+                  data-testid="options-view-only"
+                >
+                  View Only
+                </span>
+              ) : null}
             </div>
-          </form>
-        ) : null}
+          </div>
 
-        {data.options.length === 0 ? (
-          <p className="text-sm text-gray-500">No options yet</p>
-        ) : (
-          <ul className="divide-y rounded border">
-            {data.options.map((opt) => (
-              <li key={opt.id} className="p-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{opt.name}</div>
-                    {opt.description ? (
-                      <div className="text-sm text-gray-600 truncate">
-                        {opt.description}
+          {optionError ? (
+            <div
+              className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"
+              data-testid="option-error-message"
+            >
+              {optionError}
+            </div>
+          ) : null}
+
+          {data.canEdit ? (
+            <form method="post" className="mb-4 grid gap-2 sm:grid-cols-3">
+              <input type="hidden" name="action" value="option.create" />
+              <input
+                name="name"
+                placeholder="Name"
+                aria-label="Option name"
+                className="rounded border px-2 py-1"
+                required
+              />
+              <input
+                name="description"
+                placeholder="Description (optional)"
+                aria-label="Option description"
+                className="rounded border px-2 py-1 sm:col-span-2"
+              />
+              <div>
+                <button
+                  type="submit"
+                  className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                >
+                  Add Option
+                </button>
+              </div>
+            </form>
+          ) : null}
+
+          {data.options.length === 0 ? (
+            <p className="text-sm text-gray-500">No options yet</p>
+          ) : (
+            <ul className="divide-y rounded border">
+              {data.options.map((opt) => (
+                <li key={opt.id} className="p-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{opt.name}</div>
+                      {opt.description ? (
+                        <div className="text-sm text-gray-600 truncate">
+                          {opt.description}
+                        </div>
+                      ) : null}
+                    </div>
+                    {data.canEdit ? (
+                      <div className="flex items-center gap-2">
+                        <form method="post">
+                          <input
+                            type="hidden"
+                            name="action"
+                            value="option.delete"
+                          />
+                          <input type="hidden" name="id" value={opt.id} />
+                          <button
+                            type="submit"
+                            className="text-sm text-red-600 hover:text-red-800"
+                          >
+                            Delete
+                          </button>
+                        </form>
                       </div>
                     ) : null}
                   </div>
+
                   {data.canEdit ? (
-                    <div className="flex items-center gap-2">
-                      <form method="post">
+                    <details className="mt-2">
+                      <summary
+                        className="cursor-pointer text-sm text-gray-600"
+                        data-testid="option-edit-toggle"
+                      >
+                        Edit
+                      </summary>
+                      <form
+                        method="post"
+                        className="mt-2 grid gap-2 sm:grid-cols-3"
+                      >
                         <input
                           type="hidden"
                           name="action"
-                          value="option.delete"
+                          value="option.update"
                         />
                         <input type="hidden" name="id" value={opt.id} />
-                        <button
-                          type="submit"
-                          className="text-sm text-red-600 hover:text-red-800"
-                        >
-                          Delete
-                        </button>
+                        <input
+                          name="name"
+                          defaultValue={opt.name}
+                          className="rounded border px-2 py-1"
+                          required
+                        />
+                        <input
+                          name="description"
+                          defaultValue={opt.description}
+                          className="rounded border px-2 py-1 sm:col-span-2"
+                        />
+                        <div>
+                          <button
+                            type="submit"
+                            data-testid="option-edit-save"
+                            className="rounded bg-gray-800 px-3 py-1 text-white hover:bg-black"
+                          >
+                            Save
+                          </button>
+                        </div>
                       </form>
-                    </div>
+                    </details>
                   ) : null}
-                </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
 
-                {data.canEdit ? (
-                  <details className="mt-2">
-                    <summary
-                      className="cursor-pointer text-sm text-gray-600"
-                      data-testid="option-edit-toggle"
-                    >
-                      Edit
-                    </summary>
-                    <form
-                      method="post"
-                      className="mt-2 grid gap-2 sm:grid-cols-3"
-                    >
-                      <input
-                        type="hidden"
-                        name="action"
-                        value="option.update"
-                      />
-                      <input type="hidden" name="id" value={opt.id} />
-                      <input
-                        name="name"
-                        defaultValue={opt.name}
-                        className="rounded border px-2 py-1"
-                        required
-                      />
-                      <input
-                        name="description"
-                        defaultValue={opt.description}
-                        className="rounded border px-2 py-1 sm:col-span-2"
-                      />
-                      <div>
-                        <button
-                          type="submit"
-                          data-testid="option-edit-save"
-                          className="rounded bg-gray-800 px-3 py-1 text-white hover:bg-black"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </form>
-                  </details>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Sharing section - only show for owners */}
-      {isOwner ? (
+      {/* Sharing section - only show for owners; hidden while creating a poll */}
+      {isOwner && !creatingPoll ? (
         <div className="mb-6">
           <ShareList
             optionsListId={data.optionsList.id}
