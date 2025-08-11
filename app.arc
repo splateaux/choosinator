@@ -42,7 +42,42 @@ optionsListSharing
   permission String
   createdAt String
 
+poll
+  pollId *String
+  optionsListId String
+  name String
+  createdByUserId String
+  createdAt String  
+
+pollPresence
+  pollId *String
+  clientId **String
+  displayName String
+  lastSeenAt Number
+  ttl Number
+
+pollConnections
+  pk *String
+  sk **String
+  userId String
+  domainName String
+  stage String
+  ttl Number
+
+pollVote
+  pk *String
+  sk **String
+  userId String
+  optionId String
+  updatedAt String
+
 @tables-indexes
+pollConnections
+  sk *String
+  pk **String
+  name sk-pk-index
+  projection all
+
 optionsListSharing
   sharedWithUserId *String
   optionsListId **String
@@ -54,3 +89,15 @@ optionsListSharing
   optionsListId **String
   name userId-optionsListId-index
   projection all
+
+@ws
+connect
+  src ws/connect
+disconnect
+  src ws/disconnect
+default
+  src ws/default
+
+@streams
+pollVote
+  src streams/pollVote

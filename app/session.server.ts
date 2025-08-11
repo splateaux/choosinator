@@ -18,6 +18,7 @@ export const sessionStorage = createCookieSessionStorage({
 });
 
 const USER_SESSION_KEY = "userId";
+const GUEST_NAME_SESSION_KEY = "guestName";
 
 export async function getSession(request: Request) {
   const cookie = request.headers.get("Cookie");
@@ -30,6 +31,16 @@ export async function getUserId(
   const session = await getSession(request);
   const userId = session.get(USER_SESSION_KEY);
   return userId;
+}
+
+export async function getGuestName(
+  request: Request,
+): Promise<string | undefined> {
+  const session = await getSession(request);
+  const guestName = session.get(GUEST_NAME_SESSION_KEY);
+  if (typeof guestName !== "string") return undefined;
+  const trimmed = guestName.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 export async function getUser(request: Request) {
@@ -83,6 +94,24 @@ export async function createUserSession({
           ? 60 * 60 * 24 * 7 // 7 days
           : undefined,
       }),
+    },
+  });
+}
+
+export async function setGuestNameSession({
+  request,
+  guestName,
+  redirectTo,
+}: {
+  request: Request;
+  guestName: string;
+  redirectTo: string;
+}) {
+  const session = await getSession(request);
+  session.set(GUEST_NAME_SESSION_KEY, guestName.trim());
+  return redirect(redirectTo, {
+    headers: {
+      "Set-Cookie": await sessionStorage.commitSession(session),
     },
   });
 }
