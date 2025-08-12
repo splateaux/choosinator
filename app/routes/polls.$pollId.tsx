@@ -144,8 +144,6 @@ export default function PollPublicPage() {
     }
   }, [presenceFetcher.state]);
 
-
-
   return (
     <div className="max-w-2xl">
       <header className="mb-6">
