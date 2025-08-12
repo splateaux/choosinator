@@ -144,15 +144,7 @@ export default function PollPublicPage() {
     }
   }, [presenceFetcher.state]);
 
-  // Periodically revalidate loader for vote updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      if (revalidator.state !== "idle") return;
-      revalidator.revalidate();
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [revalidator]);
+
 
   return (
     <div className="max-w-2xl">
