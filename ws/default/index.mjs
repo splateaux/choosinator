@@ -1,4 +1,7 @@
-import { storePollConnection, WEBSOCKET_CONFIG } from "../../app/utils/websocket.server.js";
+import {
+  storePollConnection,
+  WEBSOCKET_CONFIG,
+} from "../../app/utils/websocket.server.js";
 
 export async function handler(req) {
   const { connectionId } = req.requestContext;
@@ -19,7 +22,7 @@ export async function handler(req) {
       connectionId,
       body.userId || "guest",
       req.requestContext.domainName,
-      req.requestContext.stage
+      req.requestContext.stage,
     );
     console.log(
       `Client subscribed to poll ${body.pollId}: connectionId=${connectionId}, userId=${body.userId || "guest"}`,

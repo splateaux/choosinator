@@ -1,4 +1,7 @@
-import { storePollConnection, WEBSOCKET_CONFIG } from "../../app/utils/websocket.server.js";
+import {
+  storePollConnection,
+  WEBSOCKET_CONFIG,
+} from "../../app/utils/websocket.server.js";
 
 export async function handler(req) {
   try {
