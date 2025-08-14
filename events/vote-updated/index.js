@@ -30,15 +30,18 @@ export const handler = async (evt) => {
   let conns = [];
   try {
     if (pollId) {
-      // try key query first
-      const q = await tables.pollConnections.query({ pk: `POLL#${pollId}` });
+      // Query by partition key with proper KeyConditionExpression
+      const q = await tables.pollConnections.query({
+        KeyConditionExpression: 'pk = :pk',
+        ExpressionAttributeValues: { ':pk': `POLL#${pollId}` }
+      });
       conns = q?.Items || [];
       console.log(`[vote-updated] query hit: ${conns.length} connections`);
     } else {
       throw new Error("no pollId");
     }
   } catch (e) {
-    console.warn("[vote-updated] query fallback to scan:", e?.message || e);
+    console.warn("[vote-updated] query failed, fallback to scan:", e?.message || e);
     const s = await tables.pollConnections.scan({});
     conns = s?.Items || [];
     if (pollId) {
