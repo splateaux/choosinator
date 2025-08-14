@@ -32,8 +32,8 @@ export const handler = async (evt) => {
     if (pollId) {
       // Query by partition key with proper KeyConditionExpression
       const q = await tables.pollConnections.query({
-        KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: { ':pk': `POLL#${pollId}` }
+        KeyConditionExpression: "pk = :pk",
+        ExpressionAttributeValues: { ":pk": `POLL#${pollId}` },
       });
       conns = q?.Items || [];
       console.log(`[vote-updated] query hit: ${conns.length} connections`);
@@ -41,7 +41,10 @@ export const handler = async (evt) => {
       throw new Error("no pollId");
     }
   } catch (e) {
-    console.warn("[vote-updated] query failed, fallback to scan:", e?.message || e);
+    console.warn(
+      "[vote-updated] query failed, fallback to scan:",
+      e?.message || e,
+    );
     const s = await tables.pollConnections.scan({});
     conns = s?.Items || [];
     if (pollId) {
