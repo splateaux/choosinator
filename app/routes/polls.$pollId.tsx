@@ -175,7 +175,6 @@ export default function PollPublicPage() {
     };
 
     ws.onerror = (error) => {
-      console.log("MORTON - onerror");
       console.error("WebSocket connection error:", {
         error,
         readyState: ws.readyState,

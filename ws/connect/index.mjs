@@ -1,4 +1,4 @@
-import arc from "@architect/functions";
+import { storePollConnection, WEBSOCKET_CONFIG } from "../../app/utils/websocket.server.js";
 
 export async function handler(req) {
   try {
@@ -18,16 +18,7 @@ export async function handler(req) {
       return { statusCode: 400, body: "Missing pollId" };
     }
 
-    const db = await arc.tables();
-    const ttl = Math.floor(Date.now() / 1000) + 60 * 30; // 30 minutes
-    await db.pollConnections.put({
-      pk: `POLL#${pollId}`,
-      sk: `CONN#${connectionId}`,
-      userId,
-      domainName,
-      stage,
-      ttl,
-    });
+    await storePollConnection(pollId, connectionId, userId, domainName, stage);
 
     console.log(
       `WebSocket connection stored: pollId=${pollId}, userId=${userId}, connectionId=${connectionId}`,
@@ -39,4 +30,4 @@ export async function handler(req) {
   }
 }
 
-export const config = { runtime: "nodejs18.x" };
+export const config = WEBSOCKET_CONFIG;
