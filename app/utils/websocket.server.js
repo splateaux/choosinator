@@ -20,6 +20,8 @@ export async function storePollConnection(
   await db.pollConnections.put({
     pk: `POLL#${pollId}`,
     sk: `CONN#${connectionId}`,
+    pollId,
+    connectionId,
     userId,
     domainName,
     stage,

@@ -30,19 +30,20 @@ export const handler = async (evt) => {
   let conns = [];
   try {
     if (pollId) {
-      // Query by partition key with proper KeyConditionExpression
+      // Use the dedicated pollId-connectionId-index for efficient querying
       const q = await tables.pollConnections.query({
-        KeyConditionExpression: "pk = :pk",
-        ExpressionAttributeValues: { ":pk": `POLL#${pollId}` },
+        IndexName: 'pollId-connectionId-index',
+        KeyConditionExpression: 'pollId = :pollId',
+        ExpressionAttributeValues: { ':pollId': pollId }
       });
       conns = q?.Items || [];
-      console.log(`[vote-updated] query hit: ${conns.length} connections`);
+      console.log(`[vote-updated] GSI query hit: ${conns.length} connections`);
     } else {
       throw new Error("no pollId");
     }
   } catch (e) {
     console.warn(
-      "[vote-updated] query failed, fallback to scan:",
+      "[vote-updated] GSI query failed, fallback to scan:",
       e?.message || e,
     );
     const s = await tables.pollConnections.scan({});

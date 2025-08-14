@@ -79,6 +79,12 @@ pollConnections
   name sk-pk-index
   projection all
 
+pollConnections
+  pollId *String
+  connectionId **String
+  name pollId-connectionId-index
+  projection all
+
 optionsListSharing
   sharedWithUserId *String
   optionsListId **String
