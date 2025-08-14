@@ -32,9 +32,9 @@ export const handler = async (evt) => {
     if (pollId) {
       // Use the dedicated pollId-connectionId-index for efficient querying
       const q = await tables.pollConnections.query({
-        IndexName: 'pollId-connectionId-index',
-        KeyConditionExpression: 'pollId = :pollId',
-        ExpressionAttributeValues: { ':pollId': pollId }
+        IndexName: "pollId-connectionId-index",
+        KeyConditionExpression: "pollId = :pollId",
+        ExpressionAttributeValues: { ":pollId": pollId },
       });
       conns = q?.Items || [];
       console.log(`[vote-updated] GSI query hit: ${conns.length} connections`);
