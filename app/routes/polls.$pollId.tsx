@@ -102,8 +102,6 @@ export default function PollPublicPage() {
     participants: { clientId: string; displayName: string }[];
   }>();
 
-
-
   const isSubmittingRef = useRef(false);
   const lastSubmitRef = useRef(0);
 
@@ -150,7 +148,7 @@ export default function PollPublicPage() {
     const userId = data.voterId;
 
     // Construct WebSocket URL - in development it's ws://, in production it's wss://
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
     // URL encode the userId to handle special characters like @ in email addresses
     const encodedUserId = encodeURIComponent(userId);
@@ -161,32 +159,32 @@ export default function PollPublicPage() {
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('WebSocket connection established successfully');
+      console.log("WebSocket connection established successfully");
     };
 
     ws.onclose = (event) => {
-      console.log('WebSocket connection closed:', {
+      console.log("WebSocket connection closed:", {
         code: event.code,
         reason: event.reason,
-        wasClean: event.wasClean
+        wasClean: event.wasClean,
       });
     };
 
     ws.onmessage = (event) => {
-      console.log('WebSocket message received: ', event.data);
+      console.log("WebSocket message received: ", event.data);
     };
 
     ws.onerror = (error) => {
-      console.log('MORTON - onerror');
-      console.error('WebSocket connection error:', {
+      console.log("MORTON - onerror");
+      console.error("WebSocket connection error:", {
         error,
         readyState: ws.readyState,
-        url: ws.url
+        url: ws.url,
       });
     };
 
     return () => {
-      console.log('Cleaning up WebSocket connection');
+      console.log("Cleaning up WebSocket connection");
       ws.close();
     };
   }, [data.poll.id, data.voterId]);
@@ -235,7 +233,7 @@ export default function PollPublicPage() {
               </button>
             </Form>
           </div>
-          {actionData && 'error' in actionData ? (
+          {actionData && "error" in actionData ? (
             <div className="text-sm text-red-700" role="alert">
               {actionData.error}
             </div>

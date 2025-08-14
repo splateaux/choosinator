@@ -7,10 +7,14 @@ export async function handler(req) {
     const pollId = req.queryStringParameters?.pollId;
     const userId = req.queryStringParameters?.userId || "guest";
 
-    console.log(`WebSocket connection received: connectionId=${connectionId}, pollId=${pollId}, userId=${userId}`);
+    console.log(
+      `WebSocket connection received: connectionId=${connectionId}, pollId=${pollId}, userId=${userId}`,
+    );
 
     if (!pollId) {
-      console.log(`WebSocket connection rejected: Missing pollId for connectionId=${connectionId}`);
+      console.log(
+        `WebSocket connection rejected: Missing pollId for connectionId=${connectionId}`,
+      );
       return { statusCode: 400, body: "Missing pollId" };
     }
 
@@ -25,10 +29,12 @@ export async function handler(req) {
       ttl,
     });
 
-    console.log(`WebSocket connection stored: pollId=${pollId}, userId=${userId}, connectionId=${connectionId}`);
+    console.log(
+      `WebSocket connection stored: pollId=${pollId}, userId=${userId}, connectionId=${connectionId}`,
+    );
     return { statusCode: 200, body: "connected" };
   } catch (error) {
-    console.error('WebSocket connect handler error:', error);
+    console.error("WebSocket connect handler error:", error);
     return { statusCode: 500, body: "Internal server error" };
   }
 }

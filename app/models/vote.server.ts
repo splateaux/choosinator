@@ -90,9 +90,9 @@ export async function adjustVoteTokens({
 
   // Locally, short-circuit streams by publishing the same event ourselves
   if (isLocal()) {
-    console.log('publishing vote-updated event');
+    console.log("publishing vote-updated event");
     await arc.events.publish({
-      name: 'vote-updated',
+      name: "vote-updated",
       payload: {
         pk,
         sk,
@@ -100,12 +100,11 @@ export async function adjustVoteTokens({
         optionId,
         updatedAt: now,
         tokens: desired,
-        source: 'writer'
+        source: "writer",
       },
     });
-  }
-  else {
-    console.log('not publishing vote-updated event');
+  } else {
+    console.log("not publishing vote-updated event");
   }
 
   // Recompute remaining with new desired value
