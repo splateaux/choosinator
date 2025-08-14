@@ -8,6 +8,8 @@ export async function handler(req) {
   } catch {
     // ignore
   }
+  console.log('MORTON - ws/default/index.mjs');
+  console.log(`WebSocket message received: connectionId=${connectionId}, body=`, body);
 
   if (body.type === "subscribe" && body.pollId) {
     const db = await arc.tables();
@@ -16,8 +18,11 @@ export async function handler(req) {
       pk: `POLL#${body.pollId}`,
       sk: `CONN#${connectionId}`,
       userId: body.userId || "guest",
+      domainName: req.requestContext.domainName,
+      stage: req.requestContext.stage,
       ttl,
     });
+    console.log(`Client subscribed to poll ${body.pollId}: connectionId=${connectionId}, userId=${body.userId || "guest"}`);
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   }
 

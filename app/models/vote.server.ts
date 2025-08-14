@@ -1,5 +1,7 @@
 import arc from "@architect/functions";
 
+import { isLocal } from "~/utils/env";
+
 export interface VoteRecord {
   pk: string; // POLL#<pollId>
   sk: string; // VOTE#<optionId>#<userId>
@@ -85,6 +87,26 @@ export async function adjustVoteTokens({
     tokens: desired,
     updatedAt: now,
   });
+
+  // Locally, short-circuit streams by publishing the same event ourselves
+  if (isLocal()) {
+    console.log('publishing vote-updated event');
+    await arc.events.publish({
+      name: 'vote-updated',
+      payload: {
+        pk,
+        sk,
+        userId,
+        optionId,
+        updatedAt: now,
+        tokens: desired,
+        source: 'writer'
+      },
+    });
+  }
+  else {
+    console.log('not publishing vote-updated event');
+  }
 
   // Recompute remaining with new desired value
   const newTotal = currentTotalAllocated - currentOptionCount + desired;

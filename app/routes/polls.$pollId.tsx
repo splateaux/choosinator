@@ -5,7 +5,6 @@ import {
   useActionData,
   useFetcher,
   useLoaderData,
-  useRevalidator,
 } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 import invariant from "tiny-invariant";
@@ -102,7 +101,8 @@ export default function PollPublicPage() {
   const presenceFetcher = useFetcher<{
     participants: { clientId: string; displayName: string }[];
   }>();
-  const revalidator = useRevalidator();
+
+
 
   const isSubmittingRef = useRef(false);
   const lastSubmitRef = useRef(0);
@@ -143,6 +143,53 @@ export default function PollPublicPage() {
       lastSubmitRef.current = Date.now();
     }
   }, [presenceFetcher.state]);
+
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    const pollId = data.poll.id;
+    const userId = data.voterId;
+
+    // Construct WebSocket URL - in development it's ws://, in production it's wss://
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    // URL encode the userId to handle special characters like @ in email addresses
+    const encodedUserId = encodeURIComponent(userId);
+    const wsUrl = `${protocol}//${host}?pollId=${pollId}&userId=${encodedUserId}`;
+
+    console.log(`Attempting to connect to WebSocket: ${wsUrl}`);
+
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      console.log('WebSocket connection established successfully');
+    };
+
+    ws.onclose = (event) => {
+      console.log('WebSocket connection closed:', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
+    };
+
+    ws.onmessage = (event) => {
+      console.log('WebSocket message received: ', event.data);
+    };
+
+    ws.onerror = (error) => {
+      console.log('MORTON - onerror');
+      console.error('WebSocket connection error:', {
+        error,
+        readyState: ws.readyState,
+        url: ws.url
+      });
+    };
+
+    return () => {
+      console.log('Cleaning up WebSocket connection');
+      ws.close();
+    };
+  }, [data.poll.id, data.voterId]);
 
   return (
     <div className="max-w-2xl">
@@ -188,7 +235,7 @@ export default function PollPublicPage() {
               </button>
             </Form>
           </div>
-          {actionData?.error ? (
+          {actionData && 'error' in actionData ? (
             <div className="text-sm text-red-700" role="alert">
               {actionData.error}
             </div>
