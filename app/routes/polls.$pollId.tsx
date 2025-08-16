@@ -195,7 +195,8 @@ export default function PollPublicPage() {
       }
 
       if (msg?.type !== "vote-updated") {
-        console.warn("WS: non-vote-updated message", msg); test
+        console.warn("WS: non-vote-updated message", msg);
+        test;
         return;
       }
 
@@ -210,6 +211,7 @@ export default function PollPublicPage() {
       }
 
       revalidateRef.current();
+      // Test message
     };
 
     ws.onerror = (error) => {
