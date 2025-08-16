@@ -23,7 +23,8 @@ export const handler = async (evt) => {
 
   const payload = extractPayload(evt) || {};
   const pollId = (payload.pk || "").replace(/^POLL#|^poll#/, "");
-  const msg = JSON.stringify({ type: "vote-updated", ...payload });
+
+  const msg = { type: 'vote-updated', ...payload };
 
   console.log("[vote-updated] pollId:", pollId || "<none>");
 
@@ -69,7 +70,9 @@ export const handler = async (evt) => {
         console.warn("[vote-updated] skip row without connection id:", row);
         return;
       }
-      // eslint-disable-next-line no-undef
+
+      // Local dev doesn't have or need domainName/stage
+      // but AWS does, because the connection is created in the AWS API Gateway
       if (process.env.ARC_LOCAL === "true") {
         return ws.send({ id, payload: msg });
       }

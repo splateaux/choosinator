@@ -188,12 +188,10 @@ export default function PollPublicPage() {
         return;
       }
 
-      /*
       if (msg?.type !== "vote-updated") {
         console.warn("WS: non-vote-updated message", msg); test
         return;
       }
-        */
 
       const msgPollId =
         msg.pollId ??
@@ -204,6 +202,8 @@ export default function PollPublicPage() {
         console.warn("WS: message for another poll", msg);
         return;
       }
+
+      revalidator.revalidate();
     };
 
     ws.onerror = (error) => {
