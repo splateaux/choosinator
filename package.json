@@ -90,9 +90,12 @@
     "npm": ">=9.0.0"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,css,md,json,yml,yaml}": [
+    "*.{js,jsx,ts,tsx}": [
       "prettier --write",
       "eslint --fix"
+    ],
+    "*.{css,md,yml,yaml,json}": [
+      "prettier --write"
     ]
   }
 }
