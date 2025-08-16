@@ -17,7 +17,7 @@ export async function storePollConnection(
   const db = await arc.tables();
   const ttl = calculateWebSocketTTL();
 
-  await db.pollConnections.put({
+  const connectionRecord = {
     pk: `POLL#${pollId}`,
     sk: `CONN#${connectionId}`,
     pollId,
@@ -26,7 +26,14 @@ export async function storePollConnection(
     domainName,
     stage,
     ttl,
-  });
+  };
+
+  try {
+    await db.pollConnections.put(connectionRecord);
+  } catch (error) {
+    console.error("Failed to store connection record:", error);
+    throw error;
+  }
 }
 
 // Common runtime configuration for WebSocket handlers

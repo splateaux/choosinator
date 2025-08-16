@@ -76,8 +76,17 @@
         "ssm:GetParameters",
         "ssm:GetParametersByPath",
         "ssm:DescribeParameters",
-        "ssm:ListParameters"
+        "ssm:ListParameters",
+        "ssm:PutParameter",
+        "ssm:DeleteParameter",
+        "ssm:DeleteParameters"
       ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudFrontFullAccess",
+      "Effect": "Allow",
+      "Action": "cloudfront:*",
       "Resource": "*"
     }
   ]
