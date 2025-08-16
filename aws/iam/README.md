@@ -107,6 +107,7 @@ These policies grant comprehensive permissions for Arc deployment:
 - **EventBridge**: Event routing and management
 - **CloudWatch Logs**: Log group management
 - **S3**: Static asset hosting and deployment artifacts
+- **SSM Parameter Store**: Configuration parameter access for Arc inventory
 
 ## Security Benefits
 
