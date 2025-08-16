@@ -194,6 +194,7 @@ export default function PollPublicPage() {
         return;
       }
         */
+      console.log("JUST A TEST");
 
       const msgPollId =
         msg.pollId ??
