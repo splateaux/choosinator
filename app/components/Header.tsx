@@ -2,8 +2,7 @@ import { Form, Link } from "@remix-run/react";
 import React from "react";
 
 import { User } from "~/models/user.server";
-
-import { useTheme } from "../root";
+import { useTheme } from "~/root";
 
 interface HeaderProps {
   user?: User; // User prop is optional

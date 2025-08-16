@@ -70,12 +70,19 @@ pollVote
   userId String
   optionId String
   updatedAt String
+  stream true
 
 @tables-indexes
 pollConnections
   sk *String
   pk **String
   name sk-pk-index
+  projection all
+
+pollConnections
+  pollId *String
+  connectionId **String
+  name pollId-connectionId-index
   projection all
 
 optionsListSharing
@@ -90,6 +97,10 @@ optionsListSharing
   name userId-optionsListId-index
   projection all
 
+@events
+vote-updated
+  src events/vote-updated
+
 @ws
 connect
   src ws/connect
@@ -98,6 +109,6 @@ disconnect
 default
   src ws/default
 
-@streams
+@table-streams
 pollVote
   src streams/pollVote

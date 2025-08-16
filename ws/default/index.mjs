@@ -1,4 +1,7 @@
-import arc from "@architect/functions";
+import {
+  storePollConnection,
+  WEBSOCKET_CONFIG,
+} from "../../app/utils/websocket.server.js";
 
 export async function handler(req) {
   const { connectionId } = req.requestContext;
@@ -8,20 +11,26 @@ export async function handler(req) {
   } catch {
     // ignore
   }
+  console.log(
+    `WebSocket message received: connectionId=${connectionId}, body=`,
+    body,
+  );
 
   if (body.type === "subscribe" && body.pollId) {
-    const db = await arc.tables();
-    const ttl = Math.floor(Date.now() / 1000) + 60 * 30;
-    await db.pollConnections.put({
-      pk: `POLL#${body.pollId}`,
-      sk: `CONN#${connectionId}`,
-      userId: body.userId || "guest",
-      ttl,
-    });
+    await storePollConnection(
+      body.pollId,
+      connectionId,
+      body.userId || "guest",
+      req.requestContext.domainName,
+      req.requestContext.stage,
+    );
+    console.log(
+      `Client subscribed to poll ${body.pollId}: connectionId=${connectionId}, userId=${body.userId || "guest"}`,
+    );
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   }
 
   return { statusCode: 200 };
 }
 
-export const config = { runtime: "nodejs18.x" };
+export const config = WEBSOCKET_CONFIG;

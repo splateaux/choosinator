@@ -21,7 +21,7 @@ export class PerformanceMonitor {
 
     // Log in development
     if (process.env.NODE_ENV === "development") {
-      console.log(`⏱️ ${label}: ${duration.toFixed(2)}ms`);
+      //console.log(`⏱️ ${label}: ${duration.toFixed(2)}ms`);
     }
 
     return duration;
