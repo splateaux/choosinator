@@ -5,6 +5,7 @@ import {
   useActionData,
   useFetcher,
   useLoaderData,
+  useRevalidator
 } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 import invariant from "tiny-invariant";
@@ -98,6 +99,7 @@ export function shouldRevalidate(args: {
 export default function PollPublicPage() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const revalidator = useRevalidator();
   const presenceFetcher = useFetcher<{
     participants: { clientId: string; displayName: string }[];
   }>();
@@ -172,6 +174,26 @@ export default function PollPublicPage() {
 
     ws.onmessage = (event) => {
       console.log("WebSocket message received: ", event.data);
+      let msg: { type?: string; pk?: string; pollId?: string; optionId?: string; updatedAt?: string };
+      try {
+        msg = JSON.parse(String(event.data));
+      } catch (error) {
+        console.warn("WS: non-JSON message", event.data, error);
+        return;
+      }
+
+      /*
+      if (msg?.type !== "vote-updated") {
+        console.warn("WS: non-vote-updated message", msg);
+        return;
+      }
+        */
+
+      const msgPollId = msg.pollId ?? (typeof msg.pk === "string" ? msg.pk.replace(/^POLL#|^poll#/, "") : undefined);
+      if (msgPollId !== pollId) {
+        console.warn("WS: message for another poll", msg);
+        return;
+      }
     };
 
     ws.onerror = (error) => {
