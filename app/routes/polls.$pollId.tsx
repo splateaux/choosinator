@@ -100,6 +100,12 @@ export default function PollPublicPage() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const revalidator = useRevalidator();
+
+  const revalidateRef = useRef(revalidator.revalidate);
+  useEffect(() => {
+    revalidateRef.current = revalidator.revalidate;
+  }, [revalidator.revalidate]);
+
   const presenceFetcher = useFetcher<{
     participants: { clientId: string; displayName: string }[];
   }>();
@@ -203,7 +209,7 @@ export default function PollPublicPage() {
         return;
       }
 
-      revalidator.revalidate();
+      revalidateRef.current();
     };
 
     ws.onerror = (error) => {

@@ -73,6 +73,8 @@ export const handler = async (evt) => {
 
       // Local dev doesn't have or need domainName/stage
       // but AWS does, because the connection is created in the AWS API Gateway
+      // and the below comment is a workaround to avoid a lint error
+      // eslint-disable-next-line no-undef
       if (process.env.ARC_LOCAL === "true") {
         return ws.send({ id, payload: msg });
       }
