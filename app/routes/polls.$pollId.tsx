@@ -5,7 +5,7 @@ import {
   useActionData,
   useFetcher,
   useLoaderData,
-  useRevalidator
+  useRevalidator,
 } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 import invariant from "tiny-invariant";
@@ -174,7 +174,13 @@ export default function PollPublicPage() {
 
     ws.onmessage = (event) => {
       console.log("WebSocket message received: ", event.data);
-      let msg: { type?: string; pk?: string; pollId?: string; optionId?: string; updatedAt?: string };
+      let msg: {
+        type?: string;
+        pk?: string;
+        pollId?: string;
+        optionId?: string;
+        updatedAt?: string;
+      };
       try {
         msg = JSON.parse(String(event.data));
       } catch (error) {
@@ -189,7 +195,11 @@ export default function PollPublicPage() {
       }
         */
 
-      const msgPollId = msg.pollId ?? (typeof msg.pk === "string" ? msg.pk.replace(/^POLL#|^poll#/, "") : undefined);
+      const msgPollId =
+        msg.pollId ??
+        (typeof msg.pk === "string"
+          ? msg.pk.replace(/^POLL#|^poll#/, "")
+          : undefined);
       if (msgPollId !== pollId) {
         console.warn("WS: message for another poll", msg);
         return;
