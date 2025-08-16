@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
 
-# Fast pre-commit hook - just format code
-echo "🎨 Formatting code..."
-npm run format
-
-echo "✅ Code formatted and ready to commit!"
+echo "🎨 Running lint-staged on staged files..."
+npx lint-staged
