@@ -211,7 +211,6 @@ export default function PollPublicPage() {
       }
 
       revalidateRef.current();
-      // Test message
     };
 
     ws.onerror = (error) => {
