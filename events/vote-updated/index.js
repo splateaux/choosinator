@@ -24,7 +24,7 @@ export const handler = async (evt) => {
   const payload = extractPayload(evt) || {};
   const pollId = (payload.pk || "").replace(/^POLL#|^poll#/, "");
 
-  const msg = { type: 'vote-updated', ...payload };
+  const msg = { type: "vote-updated", ...payload };
 
   console.log("[vote-updated] pollId:", pollId || "<none>");
 
@@ -64,7 +64,7 @@ export const handler = async (evt) => {
   }
 
   const results = await Promise.allSettled(
-    conns.map((row) => {
+    conns.map(async (row) => {
       const id = getConnId(row);
       if (!id) {
         console.warn("[vote-updated] skip row without connection id:", row);
@@ -94,7 +94,9 @@ export const handler = async (evt) => {
   );
 
   const failed = results.filter((r) => r.status === "rejected");
-  if (failed.length)
+  if (failed.length) {
     console.warn("[vote-updated] WS send failures:", failed.length);
-  else console.log("[vote-updated] broadcast complete");
+  } else {
+    console.log("[vote-updated] broadcast complete");
+  }
 };

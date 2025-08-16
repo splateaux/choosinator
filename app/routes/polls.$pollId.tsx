@@ -44,6 +44,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     voterId,
     votes,
     maxTokens: MAX_TOKENS_PER_USER,
+    ENV: { WS_URL: process.env.WS_URL },
   });
 };
 
@@ -152,34 +153,21 @@ export default function PollPublicPage() {
 
   // WebSocket connection for real-time updates
   useEffect(() => {
-    const pollId = data.poll.id;
-    const userId = data.voterId;
+    const base =
+      data.ENV?.WS_URL ??
+      (window.location.protocol === "https:" ? "wss:" : "ws:") +
+        `//${window.location.host}/testing`; // local fallback
 
-    // Construct WebSocket URL - in development it's ws://, in production it's wss://
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    // URL encode the userId to handle special characters like @ in email addresses
-    const encodedUserId = encodeURIComponent(userId);
-    const wsUrl = `${protocol}//${host}?pollId=${pollId}&userId=${encodedUserId}`;
+    const url = `${base}?pollId=${data.poll.id}&userId=${encodeURIComponent(data.voterId)}`;
 
-    console.log(`Attempting to connect to WebSocket: ${wsUrl}`);
+    console.log("🔌 [WS-CLIENT] Connecting to:", url);
 
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(url);
 
-    ws.onopen = () => {
-      console.log("WebSocket connection established successfully");
-    };
-
-    ws.onclose = (event) => {
-      console.log("WebSocket connection closed:", {
-        code: event.code,
-        reason: event.reason,
-        wasClean: event.wasClean,
-      });
-    };
+    ws.onopen = () => console.log("🔌 [WS-CLIENT] WS open", url);
 
     ws.onmessage = (event) => {
-      console.log("WebSocket message received: ", event.data);
+      console.log("🔌 [WS-CLIENT] WebSocket message received: ", event.data);
       let msg: {
         type?: string;
         pk?: string;
@@ -190,13 +178,12 @@ export default function PollPublicPage() {
       try {
         msg = JSON.parse(String(event.data));
       } catch (error) {
-        console.warn("WS: non-JSON message", event.data, error);
+        console.warn("🔌 [WS-CLIENT] non-JSON message", event.data, error);
         return;
       }
 
       if (msg?.type !== "vote-updated") {
-        console.warn("WS: non-vote-updated message", msg);
-        test;
+        console.warn("🔌 [WS-CLIENT] non-vote-updated message", msg);
         return;
       }
 
@@ -205,8 +192,8 @@ export default function PollPublicPage() {
         (typeof msg.pk === "string"
           ? msg.pk.replace(/^POLL#|^poll#/, "")
           : undefined);
-      if (msgPollId !== pollId) {
-        console.warn("WS: message for another poll", msg);
+      if (msgPollId !== data.poll.id) {
+        console.warn("🔌 [WS-CLIENT] message for another poll", msg);
         return;
       }
 
@@ -214,18 +201,15 @@ export default function PollPublicPage() {
     };
 
     ws.onerror = (error) => {
-      console.error("WebSocket connection error:", {
-        error,
-        readyState: ws.readyState,
-        url: ws.url,
-      });
+      console.error("🔌 [WS-CLIENT] WS error", error);
     };
 
-    return () => {
-      console.log("Cleaning up WebSocket connection");
-      ws.close();
+    ws.onclose = (event) => {
+      console.log("🔌 [WS-CLIENT] WS closed", event.code, event.reason);
     };
-  }, [data.poll.id, data.voterId]);
+
+    return () => ws.close();
+  }, [data.poll.id, data.voterId, data.ENV?.WS_URL]);
 
   return (
     <div className="max-w-2xl">
