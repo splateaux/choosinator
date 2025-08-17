@@ -33,6 +33,14 @@ async function storePollConnection(pollId, connectionId, userId, domainName, sta
 
 export async function handler(req) {
   try {
+    // Debug: Log all environment variables
+    console.log("🔍 [DEBUG] Environment variables:", {
+      WS_URL: process.env.WS_URL,
+      ARC_ENV: process.env.ARC_ENV,
+      NODE_ENV: process.env.NODE_ENV,
+      ALL_ENV: Object.keys(process.env).filter(key => key.includes('WS') || key.includes('URL'))
+    });
+
     const { connectionId, domainName, stage } = req.requestContext;
     // Optional: authenticate via queryStringParameters or headers
     const pollId = req.queryStringParameters?.pollId;

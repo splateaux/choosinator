@@ -44,7 +44,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     voterId,
     votes,
     maxTokens: MAX_TOKENS_PER_USER,
-    ENV: { WS_URL: process.env.WS_URL },
+    ENV: { WS_URL: process.env.ARC_WSS_URL },
   });
 };
 
