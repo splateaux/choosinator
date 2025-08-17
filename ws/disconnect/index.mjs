@@ -1,5 +1,4 @@
 import arc from "@architect/functions";
-import { WEBSOCKET_CONFIG } from "../../app/utils/websocket.server.js";
 
 export async function handler(req) {
   const { connectionId } = req.requestContext;
@@ -17,4 +16,4 @@ export async function handler(req) {
   return { statusCode: 200 };
 }
 
-export const config = WEBSOCKET_CONFIG;
+export const config = { runtime: "nodejs18.x" };

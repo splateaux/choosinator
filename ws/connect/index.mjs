@@ -1,7 +1,35 @@
-import {
-  storePollConnection,
-  WEBSOCKET_CONFIG,
-} from "../../app/utils/websocket.server.js";
+// WebSocket connect handler with inline utilities
+import arc from "@architect/functions";
+
+// Inline utility functions to avoid module bundling issues
+const WEBSOCKET_TTL_SECONDS = 60 * 30;
+
+function calculateWebSocketTTL() {
+  return Math.floor(Date.now() / 1000) + WEBSOCKET_TTL_SECONDS;
+}
+
+async function storePollConnection(pollId, connectionId, userId, domainName, stage) {
+  const db = await arc.tables();
+  const ttl = calculateWebSocketTTL();
+
+  const connectionRecord = {
+    pk: `POLL#${pollId}`,
+    sk: `CONN#${connectionId}`,
+    pollId,
+    connectionId,
+    userId,
+    domainName,
+    stage,
+    ttl,
+  };
+
+  try {
+    await db.pollConnections.put(connectionRecord);
+  } catch (error) {
+    console.error("Failed to store connection record:", error);
+    throw error;
+  }
+}
 
 export async function handler(req) {
   try {
@@ -26,6 +54,7 @@ export async function handler(req) {
     console.log(
       `WebSocket connection stored: pollId=${pollId}, userId=${userId}, connectionId=${connectionId}`,
     );
+
     return { statusCode: 200, body: "connected" };
   } catch (error) {
     console.error("WebSocket connect handler error:", error);
@@ -33,4 +62,4 @@ export async function handler(req) {
   }
 }
 
-export const config = WEBSOCKET_CONFIG;
+export const config = { runtime: "nodejs18.x" };
