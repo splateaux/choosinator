@@ -9,11 +9,7 @@ runtime nodejs18.x
 # region us-west-2
 # timeout 30
 
-@env
-staging
-  WS_URL wss://ggt8cu5ksa.execute-api.us-west-2.amazonaws.com/staging
-production
-  WS_URL wss://ggt8cu5ksa.execute-api.us-west-2.amazonaws.com/production
+
 
 @http
 /*
