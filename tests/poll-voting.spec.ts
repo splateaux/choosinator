@@ -543,6 +543,161 @@ test.describe("Poll Voting", () => {
     await expect(page.getByText(validGuestName)).toBeVisible();
   });
 
+  test("should sort poll options by vote count in descending order", async ({
+    page,
+  }) => {
+    // Generate unique test identifier for this specific test
+    const testId = faker.string.alphanumeric(8);
+    const userEmail = `test-${testId}-${faker.internet.userName()}@example.com`;
+    const userPassword = faker.internet.password({ length: 12 });
+    const listName = `Sorting Test List ${testId}-${faker.word.noun()}`;
+    const pollName = `Sorting Test Poll ${testId}-${faker.word.noun()}`;
+
+    // === PHASE 1: Setup - Create User, List, and Poll ===
+
+    // Register user
+    await page.goto("/join");
+    await page.getByRole("textbox", { name: /email/i }).fill(userEmail);
+    await page.getByLabel(/password/i).fill(userPassword);
+    await page.getByRole("button", { name: /create account/i }).click();
+    await expect(page).toHaveURL("/");
+
+    // Create options list
+    await page.getByRole("link", { name: "View Options Lists" }).click();
+    await page.getByRole("link", { name: /new options list/i }).click();
+    await page.getByLabel(/name/i).fill(listName);
+    await page.getByRole("button", { name: /save/i }).click();
+    await page.waitForURL(/\/optionsLists\/[^/]+$/, {
+      waitUntil: "networkidle",
+    });
+
+    // Add three options to the list
+    await page.getByLabel("Option name").fill("Option A");
+    await page.getByLabel("Option description").fill("First option");
+    await page.getByRole("button", { name: /add option/i }).click();
+    await expect(page.getByText("Option A")).toBeVisible();
+
+    await page.getByLabel("Option name").fill("Option B");
+    await page.getByLabel("Option description").fill("Second option");
+    await page.getByRole("button", { name: /add option/i }).click();
+    await expect(page.getByText("Option B")).toBeVisible();
+
+    await page.getByLabel("Option name").fill("Option C");
+    await page.getByLabel("Option description").fill("Third option");
+    await page.getByRole("button", { name: /add option/i }).click();
+    await expect(page.getByText("Option C")).toBeVisible();
+
+    // Create poll
+    await page.getByRole("link", { name: /create poll/i }).click();
+    await page.waitForURL(/\/optionsLists\/[^/]+\/polls\/new/);
+    await page.getByLabel(/poll name/i).fill(pollName);
+    await page.getByRole("button", { name: /create poll/i }).click();
+
+    // Should be redirected to the poll page
+    await page.waitForURL(/\/polls\/[^/]+$/, {
+      waitUntil: "networkidle",
+    });
+
+    // === PHASE 2: Test Initial Order (should be alphabetical by default) ===
+
+    // Get the options list and verify initial order
+    const optionsList = page.getByTestId("options-list");
+    await expect(optionsList).toBeVisible();
+
+    // Initially, options should be in alphabetical order: A, B, C
+    const initialOptions = await optionsList.locator("li").all();
+    expect(initialOptions).toHaveLength(3);
+
+    // Check initial order (alphabetical)
+    await expect(initialOptions[0].getByText("Option A")).toBeVisible();
+    await expect(initialOptions[1].getByText("Option B")).toBeVisible();
+    await expect(initialOptions[2].getByText("Option C")).toBeVisible();
+
+    // === PHASE 3: Test Sorting After Voting ===
+
+    // Vote on Option C (give it 3 tokens)
+    for (let i = 0; i < 3; i++) {
+      await page
+        .getByRole("button", { name: /increase tokens for Option C/i })
+        .click();
+      await page.waitForLoadState("networkidle");
+    }
+
+    // Vote on Option A (give it 1 token)
+    await page
+      .getByRole("button", { name: /increase tokens for Option A/i })
+      .click();
+    await page.waitForLoadState("networkidle");
+
+    // Vote on Option B (give it 2 tokens)
+    for (let i = 0; i < 2; i++) {
+      await page
+        .getByRole("button", { name: /increase tokens for Option B/i })
+        .click();
+      await page.waitForLoadState("networkidle");
+    }
+
+    // Wait for the page to update
+    await page.waitForLoadState("networkidle");
+
+    // === PHASE 4: Verify Sorted Order ===
+
+    // Now options should be sorted by vote count: C (3), B (2), A (1)
+    const sortedOptions = await optionsList.locator("li").all();
+    expect(sortedOptions).toHaveLength(3);
+
+    // Check sorted order (by vote count descending)
+    await expect(sortedOptions[0].getByText("Option C")).toBeVisible();
+    await expect(sortedOptions[1].getByText("Option B")).toBeVisible();
+    await expect(sortedOptions[2].getByText("Option A")).toBeVisible();
+
+    // Verify the token counts are displayed correctly
+    await expect(sortedOptions[0].getByText("3 tokens")).toBeVisible();
+    await expect(sortedOptions[1].getByText("2 tokens")).toBeVisible();
+    await expect(sortedOptions[2].getByText("1 tokens")).toBeVisible();
+
+    // === PHASE 5: Verify Bar Lengths are Proportional ===
+
+    // Get the vote bars for each option
+    const optionCBars = sortedOptions[0].locator('[aria-label*="Vote bar"]');
+    const optionBBars = sortedOptions[1].locator('[aria-label*="Vote bar"]');
+    const optionABars = sortedOptions[2].locator('[aria-label*="Vote bar"]');
+
+    // Wait for bars to be visible
+    await expect(optionCBars).toBeVisible();
+    await expect(optionBBars).toBeVisible();
+    await expect(optionABars).toBeVisible();
+
+    // Verify that Option C (3 tokens) has the longest bar
+    // Option B (2 tokens) should have 2/3 the length of Option C
+    // Option A (1 token) should have 1/3 the length of Option C
+
+    // Get the actual bar widths using JavaScript
+    const barWidths = await page.evaluate(() => {
+      const bars = document.querySelectorAll('[aria-label*="Vote bar"]');
+      return Array.from(bars).map((bar) => {
+        const innerBar = bar.querySelector(
+          'div[style*="width"]',
+        ) as HTMLElement;
+        return innerBar ? parseFloat(innerBar.style.width) : 0;
+      });
+    });
+
+    // Should have 3 bars
+    expect(barWidths).toHaveLength(3);
+
+    // Option C should have the longest bar (100% - it's the maximum)
+    expect(barWidths[0]).toBeGreaterThan(0);
+
+    // Option B should have 2/3 the length of Option C
+    const expectedBWidth = (2 / 3) * 100; // 66.67%
+    expect(barWidths[1]).toBeCloseTo(expectedBWidth, 0);
+
+    // Option A should have 1/3 the length of Option C
+    const expectedAWidth = (1 / 3) * 100; // 33.33%
+    expect(barWidths[2]).toBeCloseTo(expectedAWidth, 0);
+  });
+
   // Add a simple isolation test to help identify parallel execution issues
   test("should maintain isolation between parallel test runs", async ({
     page,

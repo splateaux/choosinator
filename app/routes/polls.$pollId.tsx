@@ -17,6 +17,7 @@ import {
   getVotesForPoll,
   MAX_TOKENS_PER_USER,
 } from "~/models/vote.server";
+import { useTheme } from "~/root";
 import {
   getGuestName,
   getUserId,
@@ -101,6 +102,7 @@ export default function PollPublicPage() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const revalidator = useRevalidator();
+  const { toggleTheme } = useTheme();
 
   const revalidateRef = useRef(revalidator.revalidate);
   useEffect(() => {
@@ -212,162 +214,317 @@ export default function PollPublicPage() {
   }, [data.poll.id, data.voterId, data.ENV?.WS_URL]);
 
   return (
-    <div className="max-w-2xl">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold">{data.poll.name}</h1>
-        <p className="text-sm text-gray-600">Poll ID: {data.poll.id}</p>
-      </header>
-
-      {/* Auth choice */}
-      {data.userId ? (
-        <div className="mb-4 p-3 rounded bg-green-50 text-green-800 text-sm">
-          You are signed in.
-        </div>
-      ) : data.guestName ? (
-        <div className="mb-4 p-3 rounded bg-blue-50 text-blue-800 text-sm">
-          Participating as guest:{" "}
-          <span className="font-medium">{data.guestName}</span>
-        </div>
-      ) : (
-        <div className="mb-6 grid gap-3">
-          <div className="text-sm">Participate as:</div>
-          <div className="flex gap-3">
-            <a
-              className="rounded bg-gray-800 px-3 py-1 text-white hover:bg-black"
-              href={`/login?redirectTo=/polls/${data.poll.id}`}
-            >
-              Sign in
-            </a>
-            <Form method="post" className="flex items-center gap-2">
-              <input type="hidden" name="intent" value="guestName" />
-              <input
-                name="guestName"
-                placeholder="Your name"
-                aria-label="Your name"
-                className="rounded border px-2 py-1"
-                required
-              />
-              <button
-                type="submit"
-                className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
-              >
-                Continue as Guest
-              </button>
-            </Form>
-          </div>
-          {actionData && "error" in actionData ? (
-            <div className="text-sm text-red-700" role="alert">
-              {actionData.error}
+    <main
+      className="
+        grid
+        grid-cols-1
+        lg:grid-cols-[minmax(320px,860px)_1fr]
+        gap-x-8
+        px-4 sm:px-6 lg:px-10
+      "
+    >
+      <div className="col-start-1 w-full">
+        <header className="w-full mb-6">
+          <div className="flex items-center mb-4">
+            <div className="flex-shrink-0">
+              <h1 className="text-3xl font-bold">{data.poll.name}</h1>
+              <p className="text-sm text-gray-600">Poll ID: {data.poll.id}</p>
             </div>
-          ) : null}
-        </div>
-      )}
-
-      <section>
-        <h2 className="text-xl font-semibold mb-2">Options</h2>
-        {data.options.length === 0 ? (
-          <p className="text-sm text-gray-500">No options available.</p>
-        ) : (
-          <ul className="divide-y rounded border" data-testid="options-list">
-            {data.options.map((opt) => {
-              const byUser = data.votes.byOption[opt.id]?.byUser || {};
-              const total = data.votes.byOption[opt.id]?.total || 0;
-              const segments = Object.entries(byUser).filter(([, t]) => t > 0);
-              return (
-                <li key={opt.id} className="p-3 grid gap-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-medium">{opt.name}</div>
-                    <Form method="post" className="flex items-center gap-2">
-                      <input type="hidden" name="intent" value="vote.adjust" />
-                      <input type="hidden" name="pollId" value={data.poll.id} />
-                      <input type="hidden" name="optionId" value={opt.id} />
-                      <button
-                        type="submit"
-                        name="delta"
-                        value={-1}
-                        className="rounded border px-2 py-1"
-                        aria-label={`Decrease tokens for ${opt.name}`}
-                      >
-                        −
-                      </button>
-                      <button
-                        type="submit"
-                        name="delta"
-                        value={1}
-                        className="rounded border px-2 py-1"
-                        aria-label={`Increase tokens for ${opt.name}`}
-                      >
-                        +
-                      </button>
-                    </Form>
-                  </div>
-                  {opt.description ? (
-                    <div className="text-sm text-gray-600">
-                      {opt.description}
-                    </div>
-                  ) : null}
-                  <div
-                    className="h-3 w-full bg-gray-200 rounded overflow-hidden"
-                    aria-label={`Vote bar for ${opt.name}`}
+            <div className="flex items-center gap-3 flex-1 justify-end ml-6">
+              <button
+                onClick={toggleTheme}
+                className="rounded border px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Toggle theme"
+              >
+                🔧
+              </button>
+              {data.userId ? (
+                <Form action="/logout" method="post">
+                  <button
+                    type="submit"
+                    className="rounded border px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
                   >
-                    <div className="flex h-full w-full">
-                      {segments.length === 0 ? (
-                        <div className="h-full w-0" />
-                      ) : (
-                        segments.map(([uid, count]) => {
-                          const color = userIdToColor(uid);
-                          const w = total > 0 ? (count / total) * 100 : 0;
-                          return (
-                            <div
-                              key={uid}
-                              className="h-full"
-                              style={{ width: `${w}%`, backgroundColor: color }}
-                            />
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-600">{total} tokens</div>
-                </li>
-              );
-            })}
-          </ul>
+                    Log Out
+                  </button>
+                </Form>
+              ) : (
+                <a
+                  href={`/login?redirectTo=/polls/${data.poll.id}`}
+                  className="rounded border px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  Log In
+                </a>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Auth choice */}
+        {data.userId ? (
+          <div className="mb-4 p-3 rounded bg-green-50 text-green-800 text-sm">
+            You are signed in.
+          </div>
+        ) : data.guestName ? (
+          <div className="mb-4 p-3 rounded bg-blue-50 text-blue-800 text-sm">
+            Participating as guest:{" "}
+            <span className="font-medium">{data.guestName}</span>
+          </div>
+        ) : (
+          <div className="mb-6 grid gap-3">
+            <div className="text-sm">Participate as:</div>
+            <div className="flex gap-3">
+              <a
+                className="rounded bg-gray-800 px-3 py-1 text-white hover:bg-black"
+                href={`/login?redirectTo=/polls/${data.poll.id}`}
+              >
+                Sign in
+              </a>
+              <Form method="post" className="flex items-center gap-2">
+                <input type="hidden" name="intent" value="guestName" />
+                <input
+                  name="guestName"
+                  placeholder="Your name"
+                  aria-label="Your name"
+                  className="rounded border px-2 py-1"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                >
+                  Continue as Guest
+                </button>
+              </Form>
+            </div>
+            {actionData && "error" in actionData ? (
+              <div className="text-sm text-red-700" role="alert">
+                {actionData.error}
+              </div>
+            ) : null}
+          </div>
         )}
-      </section>
 
-      <section className="mt-4">
-        <div className="text-sm">
-          Remaining balance:{" "}
-          {Math.max(
-            0,
-            data.maxTokens - (data.votes.totalsByUser[data.voterId] || 0),
-          )}{" "}
-          tokens
-        </div>
-      </section>
+        <section
+          className="
+          w-full rounded-xl p-4
+          border border-gray-100 bg-white ring-1 ring-black/5
+          dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10
+        "
+        >
+          <h2 className="text-xl font-semibold mb-2">Current Results</h2>
+          {data.options.length === 0 ? (
+            <p className="text-sm text-gray-500">No options available.</p>
+          ) : (
+            <div className="space-y-0">
+              {data.options
+                .map((opt) => {
+                  const byUser = data.votes.byOption[opt.id]?.byUser || {};
+                  const total = data.votes.byOption[opt.id]?.total || 0;
+                  const segments = Object.entries(byUser).filter(
+                    ([, t]) => t > 0,
+                  );
+                  return {
+                    ...opt,
+                    byUser,
+                    total,
+                    segments,
+                  };
+                })
+                .sort((a, b) => b.total - a.total) // Sort by vote count descending
+                .filter((opt) => opt.total > 0) // Only show options with votes
+                .map((opt) => {
+                  // Calculate the maximum total votes across all options for relative scaling
+                  const maxTotal = Math.max(
+                    ...data.options.map(
+                      (o) => data.votes.byOption[o.id]?.total || 0,
+                    ),
+                  );
+                  // Calculate the overall bar width as a percentage of the maximum votes
+                  const overallBarWidth =
+                    maxTotal > 0 ? (opt.total / maxTotal) * 100 : 0;
 
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold mb-2">People here now</h2>
-        {presenceFetcher.data ? (
-          presenceFetcher.data.participants.length === 0 ? (
-            <p className="text-sm text-gray-500">Nobody else is here yet.</p>
+                  return (
+                    <div
+                      key={opt.id}
+                      className="
+                      py-2
+                      bg-white
+                      dark:bg-transparent
+                    "
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-1">
+                        <div className="font-medium">{opt.name}</div>
+                        <div className="text-sm font-mono text-gray-600 dark:text-gray-300 transition-all duration-700 ease-in-out transform hover:scale-105">
+                          {opt.total} tokens
+                        </div>
+                      </div>
+                      <div
+                        className="
+                        h-2.5 w-full rounded-full
+                        bg-gray-200
+                        dark:bg-slate-700
+                      "
+                        aria-label={`Vote bar for ${opt.name}`}
+                      >
+                        <div
+                          className="flex h-full transition-all duration-700 ease-in-out"
+                          style={{ width: `${overallBarWidth}%` }}
+                        >
+                          {opt.segments.length === 0 ? (
+                            <div className="h-full w-0" />
+                          ) : (
+                            opt.segments.map(([uid, count]) => {
+                              const color = userIdToColor(uid);
+                              const w =
+                                opt.total > 0 ? (count / opt.total) * 100 : 0;
+                              return (
+                                <div
+                                  key={uid}
+                                  className="h-full transition-all duration-700 ease-in-out"
+                                  style={{
+                                    width: `${w}%`,
+                                    backgroundColor: color,
+                                  }}
+                                />
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              {(() => {
+                const optionsWithNoVotes = data.options.filter(
+                  (opt) => (data.votes.byOption[opt.id]?.total || 0) === 0,
+                );
+                return optionsWithNoVotes.length > 0 ? (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2 border-none bg-transparent">
+                    No votes yet for other options
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          )}
+        </section>
+
+        <section className="w-full mt-8">
+          <h2 className="text-xl font-semibold mb-2">Vote on Options</h2>
+          {data.options.length === 0 ? (
+            <p className="text-sm text-gray-500">No options available.</p>
           ) : (
             <ul
-              className="rounded border divide-y"
-              data-testid="participants-list"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+              data-testid="options-list"
             >
-              {presenceFetcher.data.participants.map((p) => (
-                <li key={p.clientId} className="p-2 text-sm">
-                  {p.displayName}
-                </li>
-              ))}
+              {data.options
+                .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically for easy finding
+                .map((opt) => {
+                  const byUser = data.votes.byOption[opt.id]?.byUser || {};
+                  const total = data.votes.byOption[opt.id]?.total || 0;
+                  const currentUserVotes = byUser[data.voterId] || 0;
+
+                  return (
+                    <li
+                      key={opt.id}
+                      className="p-2 rounded border border-gray-100 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-medium">
+                            {opt.name}
+                            {opt.description ? (
+                              <span className="text-sm text-gray-600 font-normal ml-2">
+                                - {opt.description}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Your votes: {currentUserVotes} | Total: {total}
+                          </div>
+                        </div>
+                        <Form method="post" className="flex items-center gap-2">
+                          <input
+                            type="hidden"
+                            name="intent"
+                            value="vote.adjust"
+                          />
+                          <input
+                            type="hidden"
+                            name="pollId"
+                            value={data.poll.id}
+                          />
+                          <input type="hidden" name="optionId" value={opt.id} />
+                          <button
+                            type="submit"
+                            name="delta"
+                            value={-1}
+                            className="rounded border px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label={`Decrease tokens for ${opt.name}`}
+                            disabled={currentUserVotes <= 0}
+                          >
+                            −
+                          </button>
+                          <button
+                            type="submit"
+                            name="delta"
+                            value={1}
+                            className="rounded border px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label={`Increase tokens for ${opt.name}`}
+                            disabled={total >= data.maxTokens}
+                          >
+                            +
+                          </button>
+                        </Form>
+                      </div>
+                    </li>
+                  );
+                })}
             </ul>
-          )
-        ) : (
-          <p className="text-sm text-gray-500">Loading participants…</p>
-        )}
-      </section>
-    </div>
+          )}
+        </section>
+
+        <section className="mt-4">
+          <div className="text-sm">
+            Remaining balance:{" "}
+            {Math.max(
+              0,
+              data.maxTokens - (data.votes.totalsByUser[data.voterId] || 0),
+            )}{" "}
+            tokens
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <h2 className="text-xl font-semibold mb-2">People here now</h2>
+          {presenceFetcher.data ? (
+            presenceFetcher.data.participants.length === 0 ? (
+              <p className="text-sm text-gray-500">Nobody else is here yet.</p>
+            ) : (
+              <ul
+                className="rounded border divide-y"
+                data-testid="participants-list"
+              >
+                {presenceFetcher.data.participants.map((p) => (
+                  <li
+                    key={p.clientId}
+                    className="p-2 text-sm flex items-center gap-2"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: userIdToColor(p.clientId) }}
+                      title={`${p.displayName}'s vote color`}
+                    />
+                    {p.displayName}
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : (
+            <p className="text-sm text-gray-500">Loading participants…</p>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
