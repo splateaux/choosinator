@@ -506,7 +506,15 @@ export default function PollPublicPage() {
                 data-testid="participants-list"
               >
                 {presenceFetcher.data.participants.map((p) => (
-                  <li key={p.clientId} className="p-2 text-sm">
+                  <li
+                    key={p.clientId}
+                    className="p-2 text-sm flex items-center gap-2"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: userIdToColor(p.clientId) }}
+                      title={`${p.displayName}'s vote color`}
+                    />
                     {p.displayName}
                   </li>
                 ))}
