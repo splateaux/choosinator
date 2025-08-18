@@ -413,7 +413,10 @@ export default function PollPublicPage() {
           {data.options.length === 0 ? (
             <p className="text-sm text-gray-500">No options available.</p>
           ) : (
-            <ul className="space-y-1" data-testid="options-list">
+            <ul
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+              data-testid="options-list"
+            >
               {data.options
                 .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically for easy finding
                 .map((opt) => {
