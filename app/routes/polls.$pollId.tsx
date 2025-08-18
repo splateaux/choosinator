@@ -239,6 +239,7 @@ export default function PollPublicPage() {
               Sign in
             </a>
             <Form method="post" className="flex items-center gap-2">
+              <input type="hidden" name="intent" value="guestName" />
               <input
                 name="guestName"
                 placeholder="Your name"
@@ -247,8 +248,7 @@ export default function PollPublicPage() {
                 required
               />
               <button
-                name="intent"
-                value="guestName"
+                type="submit"
                 className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
               >
                 Continue as Guest
