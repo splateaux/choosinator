@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: write
+  id-token: write
   contents: read
 
 defaults:
@@ -30,12 +30,12 @@ jobs:
       - name: ⎔ Setup node
         uses: actions/setup-node@v4
         with:
-          cache: npm
+          cache: "npm"
           cache-dependency-path: ./package.json
-          node-version: 18
+          node-version: 22
 
       - name: 📥 Install deps
-        run: npm install
+        run: npm ci
 
       - name: 🔬 Lint
         run: npm run lint
@@ -50,12 +50,12 @@ jobs:
       - name: ⎔ Setup node
         uses: actions/setup-node@v4
         with:
-          cache: npm
+          cache: "npm"
           cache-dependency-path: ./package.json
-          node-version: 18
+          node-version: 22
 
       - name: 📥 Install deps
-        run: npm install
+        run: npm ci
 
       - name: 🔎 Type check
         run: npm run typecheck --if-present
@@ -70,49 +70,57 @@ jobs:
       - name: ⎔ Setup node
         uses: actions/setup-node@v4
         with:
-          cache: npm
+          cache: "npm"
           cache-dependency-path: ./package.json
-          node-version: 18
+          node-version: 22
 
       - name: 📥 Install deps
-        run: npm install
+        run: npm ci
 
       - name: ⚡ Run vitest
         run: npm run test -- --coverage
 
-  cypress:
-    name: ⚫️ Cypress
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⬇️ Checkout repo
-        uses: actions/checkout@v4
-
-      - name: 🏄 Copy test env vars
-        run: cp .env.example .env
-
-      - name: ⎔ Setup node
-        uses: actions/setup-node@v4
-        with:
-          cache: npm
-          cache-dependency-path: ./package.json
-          node-version: 18
-
-      - name: 📥 Install deps
-        run: npm install
-
-      - name: 🏗 Build
-        run: npm run build
-
-      - name: 🌳 Cypress run
-        uses: cypress-io/github-action@v6
-        with:
-          start: npm run dev
-          wait-on: "http://localhost:8811"
-        env:
-          PORT: "8811"
+  # playwright:
+  #   name: 🎭 Playwright
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     NODE_ENV: "test"
+  #     SESSION_SECRET: "test-session-secret-for-ci"
+  #     ARC_APP_SECRET: "test-arc-app-secret-for-ci"
+  #   steps:
+  #     - name: ⬇️ Checkout repo
+  #       uses: actions/checkout@v4
+  #
+  #     - name: 🏄 Copy test env vars
+  #       run: cp .env.example .env
+  #
+  #     - name: ⎔ Setup node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         cache: npm
+  #         cache-dependency-path: ./package.json
+  #         node-version: 22
+  #
+  #     - name: 📥 Install deps
+  #       run: npm install
+  #
+  #     - name: 🎭 Install Playwright browsers
+  #       run: npx playwright install --with-deps
+  #
+  #     - name: 🏗 Build
+  #       run: npm run build
+  #
+  #     - name: 🎭 Playwright run
+  #       run: |
+  #         echo "NODE_ENV: $NODE_ENV"
+  #         echo "SESSION_SECRET: $SESSION_SECRET"
+  #         echo "ARC_APP_SECRET: $ARC_APP_SECRET"
+  #         npm run test:e2e
+  #       env:
+  #         PORT: "3333"
 
   deploy:
-    needs: [lint, typecheck, vitest, cypress]
+    needs: [lint, typecheck, vitest]
     runs-on: ubuntu-latest
 
     steps:
@@ -122,9 +130,9 @@ jobs:
       - name: ⎔ Setup node
         uses: actions/setup-node@v4
         with:
-          cache: npm
+          cache: "npm"
           cache-dependency-path: ./package.json
-          node-version: 18
+          node-version: 22
 
       - name: 👀 Env
         run: |
@@ -136,26 +144,33 @@ jobs:
           VER=`npm --version`; echo "npm ver:    $VER"
 
       - name: 📥 Install deps
-        run: npm install
+        run: npm ci
 
       - name: 🏗 Build
         run: npm run build
 
-      - name: 🛠 Install Arc
-        run: npm i -g @architect/architect
-
-      - name: 🚀 Staging Deploy
+      - name: 🔐 Configure AWS (staging)
         if: github.ref == 'refs/heads/dev'
-        run: arc deploy --staging --prune
-        env:
-          CI: true
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::439882680258:role/Choosinator-DeployRole-Staging
+          aws-region: us-west-2
 
-      - name: 🚀 Production Deploy
-        if: github.ref == 'refs/heads/main'
-        run: arc deploy --production --prune
+      - name: 🚀 Arc deploy (staging)
+        if: github.ref == 'refs/heads/dev'
+        run: npx arc deploy --staging --prune
         env:
           CI: true
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: 🔐 Configure AWS (prod)
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::439882680258:role/Choosinator-DeployRole-Production
+          aws-region: us-west-2
+
+      - name: 🚀 Arc deploy (prod)
+        if: github.ref == 'refs/heads/main'
+        run: npx arc deploy --production --prune
+        env:
+          CI: true

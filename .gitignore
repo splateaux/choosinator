@@ -10,5 +10,6 @@ sam.json
 sam.yaml
 .env
 
-/cypress/screenshots
-/cypress/videos
+# Playwright test artifacts
+playwright-report/
+test-results/

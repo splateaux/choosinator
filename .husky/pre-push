@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+
+echo ""
+echo "🔍 Running pre-push checks..."
+echo "⏱️  This may take 30-60 seconds..."
+echo ""
+
+echo "📋 Checking ESLint..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ ESLint failed. Please fix the errors before pushing."
+  exit 1
+fi
+echo "✅ ESLint passed!"
+echo ""
+
+echo "🔧 Checking TypeScript..."
+npm run typecheck
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript check failed. Please fix the errors before pushing."
+  exit 1
+fi
+echo "✅ TypeScript check passed!"
+echo ""
+
+echo "🧪 Running tests..."
+echo "📊 Running 36 unit tests..."
+npm test -- --run
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Tests failed. Please fix the failing tests before pushing."
+  exit 1
+fi
+echo "✅ All tests passed!"
+echo ""
+
+echo "🎉 All checks passed! Proceeding with push..."
+echo ""

@@ -1,12 +1,6 @@
-# Remix Grunge Stack
+# Choosinator
 
-![The Remix Grunge Stack](https://repository-images.githubusercontent.com/463325363/edae4f5b-1a13-47ea-b90c-c05badc2a700)
-
-Learn more about [Remix Stacks](https://remix.run/stacks).
-
-```
-npx create-remix@latest --template remix-run/grunge-stack
-```
+A decision-making application built with Remix and AWS serverless architecture. Create lists of options and let the Choosinator help you make decisions!
 
 ## What's in the stack
 
@@ -16,20 +10,39 @@ npx create-remix@latest --template remix-run/grunge-stack
 - Email/Password Authentication with [cookie-based sessions](https://remix.run/utils/sessions#createcookiesessionstorage)
 - DynamoDB access via [`arc.tables`](https://arc.codes/docs/en/reference/runtime-helpers/node.js#arc.tables)
 - Styling with [Tailwind](https://tailwindcss.com/)
-- End-to-end testing with [Cypress](https://cypress.io)
+- End-to-end testing with [Playwright](https://playwright.dev)
 - Local third party request mocking with [MSW](https://mswjs.io)
 - Unit testing with [Vitest](https://vitest.dev) and [Testing Library](https://testing-library.com)
 - Code formatting with [Prettier](https://prettier.io)
 - Linting with [ESLint](https://eslint.org)
 - Static Types with [TypeScript](https://typescriptlang.org)
 
-Not a fan of bits of the stack? Fork it, change it, and use `npx create-remix --template your/repo`! Make it your own.
+## Prerequisites
 
-## Quickstart
+- Node.js 22.x or later
+- npm or yarn
+- AWS account with credentials configured
 
-Click this button to create a [Gitpod](https://gitpod.io) workspace with the project set up
+## Getting Started
 
-[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/from-referrer/)
+1. **Clone the repository**
+
+   ```sh
+   git clone <your-repo-url>
+   cd choosinator
+   ```
+
+2. **Install dependencies**
+
+   ```sh
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```sh
+   cp .env.example .env
+   # Edit .env with your local values if needed
+   ```
 
 ## Development
 
@@ -47,19 +60,87 @@ Click this button to create a [Gitpod](https://gitpod.io) workspace with the pro
 
 This starts your app in development mode, rebuilding assets on file changes.
 
-### Relevant code:
+### Quick Development Login
 
-This is a pretty simple note-taking app, but it's a good example of how you can build a full stack app with Architect and Remix. The main functionality is creating users, logging in and out, and creating and deleting notes.
+Local users are auto-seeded via Architect Sandbox when the dev server starts.
 
-- creating users, and logging in and out [./app/models/user.server.ts](./app/models/user.server.ts)
-- user sessions, and verifying them [./app/session.server.ts](./app/session.server.ts)
-- creating, and deleting notes [./app/models/note.server.ts](./app/models/note.server.ts)
+```sh
+npm run dev
+```
+
+Two users are created for you automatically:
+
+- `dev@example.com` / `devpassword123`
+- `dev2@example.com` / `devpassword123`
+- `dev3@example.com` / `devpassword123`
+
+To change the seed data, edit `sandbox-seed.json`. To change the password, generate a new bcrypt hash and update the `password` entries:
+
+```sh
+node -e "console.log(require('bcryptjs').hashSync('your-new-password', 10))"
+```
+
+If you need to create users programmatically in tests, you can still use the existing test route:
+
+```ts
+await page.request.post("/tests/create-user", { data: { email } });
+```
+
+### Application Features:
+
+The Choosinator is a decision-making application that helps users create and manage lists of options. The main functionality includes:
+
+- **User Management**: Creating users, logging in and out [./app/models/user.server.ts](./app/models/user.server.ts)
+- **Session Management**: User sessions and authentication [./app/session.server.ts](./app/session.server.ts)
+- **Options Lists**: Creating and managing decision-making lists [./app/models/optionsList.server.ts](./app/models/optionsList.server.ts)
+- **List Sharing**: Share lists with other users and manage sharing permissions [./app/models/optionsListSharing.server.ts](./app/models/optionsListSharing.server.ts)
+
+### Database Schema:
+
+The application uses DynamoDB with the following tables:
+
+- `user` - User accounts and authentication
+- `password` - Hashed passwords for user authentication
+- `optionsList` - Decision-making lists created by users
+- `option` - Individual options within lists
+- `optionsListSharing` - Sharing permissions for lists
+
+## List Sharing Feature
+
+The Choosinator supports sharing lists with other users. Here's how it works:
+
+### For List Owners:
+
+- **Share Lists**: Enter an email address to share your list with another user
+- **Manage Sharing**: View all users who have access to your list and remove access as needed
+- **Visual Indicators**: Shared lists are clearly marked in the interface
+
+### For Shared Users:
+
+- **View Shared Lists**: Access lists shared with you in the "Shared with Me" section
+- **Modify Lists**: Edit and modify lists that have been shared with you
+- **Clear Attribution**: See who originally created the list
+
+### How to Share:
+
+1. Navigate to any list you own
+2. Look for the "Share List" section
+3. Enter the email address of the user you want to share with
+4. Click "Share" to grant access
+5. The user will now see the list in their "Shared with Me" section
+
+### Security Features:
+
+- Only list owners can share or unshare lists
+- Users cannot share lists with themselves
+- Users must exist in the system to be shared with
+- Clear visual distinction between owned and shared lists
 
 The database that comes with `arc sandbox` is an in memory database, so if you restart the server, you'll lose your data. The Staging and Production environments won't behave this way, instead they'll persist the data in DynamoDB between deployments and Lambda executions.
 
 ## Deployment
 
-This Remix Stack comes with two GitHub Actions that handle automatically deploying your app to production and staging environments. By default, Arc will deploy to the `us-west-2` region, if you wish to deploy to a different region, you'll need to change your [`app.arc`](https://arc.codes/docs/en/reference/project-manifest/aws)
+This application comes with GitHub Actions that handle automatically deploying your app to production and staging environments. By default, Arc will deploy to the `us-west-1` region, if you wish to deploy to a different region, you'll need to change your [`app.arc`](https://arc.codes/docs/en/reference/project-manifest/aws)
 
 Prior to your first deployment, you'll need to do a few things:
 
@@ -76,19 +157,26 @@ Prior to your first deployment, you'll need to do a few things:
 - Along with your AWS credentials, you'll also need to give your CloudFormation a `SESSION_SECRET` variable of its own for both staging and production environments, as well as an `ARC_APP_SECRET` for Arc itself.
 
   ```sh
-  npx arc env --add --env staging ARC_APP_SECRET $(openssl rand -hex 32)
-  npx arc env --add --env staging SESSION_SECRET $(openssl rand -hex 32)
-  npx arc env --add --env production ARC_APP_SECRET $(openssl rand -hex 32)
-  npx arc env --add --env production SESSION_SECRET $(openssl rand -hex 32)
+  npx arc env --add --env staging ARC_APP_SECRET $(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+  npx arc env --add --env staging SESSION_SECRET $(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+  npx arc env --add --env production ARC_APP_SECRET $(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+  npx arc env --add --env production SESSION_SECRET $(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
   ```
 
-  If you don't have openssl installed, you can also use [1password](https://1password.com/password-generator) to generate a random secret, just replace `$(openssl rand -hex 32)` with the generated secret.
+  If you prefer, you can also use [1password](https://1password.com/password-generator) to generate a random secret, just replace the `$(node -e ...)` part with the generated secret.
+
+  After adding environment variables, you'll need to redeploy to apply them:
+
+  ```sh
+  npx arc deploy --staging
+  npx arc deploy --production
+  ```
 
 ## Where do I find my CloudFormation?
 
 You can find the CloudFormation template that Architect generated for you in the sam.yaml file.
 
-To find it on AWS, you can search for [CloudFormation](https://console.aws.amazon.com/cloudformation/home) (make sure you're looking at the correct region!) and find the name of your stack (the name is a PascalCased version of what you have in `app.arc`, so by default it's ChoosinatorD2bdStaging and ChoosinatorD2bdProduction) that matches what's in `app.arc`, you can find all of your app's resources under the "Resources" tab.
+To find it on AWS, you can search for [CloudFormation](https://console.aws.amazon.com/cloudformation/home) (make sure you're looking at the correct region!) and find the name of your stack (the name is a PascalCased version of what you have in `app.arc`, so by default it's ChoosinatorStaging and ChoosinatorProduction) that matches what's in `app.arc`, you can find all of your app's resources under the "Resources" tab.
 
 ## GitHub Actions
 
@@ -96,18 +184,16 @@ We use GitHub Actions for continuous integration and deployment. Anything that g
 
 ## Testing
 
-### Cypress
+### Playwright
 
-We use Cypress for our End-to-End tests in this project. You'll find those in the `cypress` directory. As you make changes, add to an existing file or create a new file in the `cypress/e2e` directory to test your changes.
+We use Playwright for our End-to-End tests in this project. You'll find those in the `tests` directory. As you make changes, add to an existing file or create a new file in the `tests` directory to test your changes.
 
-We use [`@testing-library/cypress`](https://testing-library.com/cypress) for selecting elements on the page semantically.
-
-To run these tests in development, run `npm run test:e2e:dev` which will start the dev server for the app as well as the Cypress client. Make sure the database is running in docker as described above.
+To run these tests in development, run `npm run test:e2e` which will start the dev server for the app and run the Playwright tests.
 
 We have a utility for testing authenticated features without having to go through the login flow:
 
 ```ts
-cy.login();
+await page.request.post("/__tests/create-user", { data: { email } });
 // you are now logged in as a new user
 ```
 

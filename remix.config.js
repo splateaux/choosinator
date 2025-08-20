@@ -8,6 +8,11 @@ export default {
   server: "server.ts",
   serverBuildPath: "server/index.mjs",
   serverModuleFormat: "esm",
+  browserNodeBuiltinsPolyfill: {
+    modules: {
+      querystring: true,
+    },
+  },
   routes: (defineRoutes) =>
     defineRoutes((route) => {
       if (process.env.NODE_ENV === "production") return;
@@ -17,8 +22,15 @@ export default {
       const appDir = path.join(process.cwd(), "app");
 
       route(
-        "__tests/create-user",
-        path.relative(appDir, "cypress/support/test-routes/create-user.ts"),
+        "tests/create-user",
+        path.relative(appDir, "tests/support/test-routes/create-user.ts"),
       );
+
+      route(
+        "tests/create-user-only",
+        path.relative(appDir, "tests/support/test-routes/create-user-only.ts"),
+      );
+
+      // dev-auto-login route removed; seeding handled by Architect Sandbox
     }),
 };

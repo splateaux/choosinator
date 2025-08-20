@@ -2,8 +2,7 @@ import { Form, Link } from "@remix-run/react";
 import React from "react";
 
 import { User } from "~/models/user.server";
-
-import { useTheme } from "../root";
+import { useTheme } from "~/root";
 
 interface HeaderProps {
   user?: User; // User prop is optional
@@ -37,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
       <div style={{ flex: 1, textAlign: "right" }}>
         {user ? (
           <>
-            <span>{user.email}</span>
+            <span data-user-email={user.email}>{user.email}</span>
             <button onClick={toggleTheme} style={{ marginLeft: "10px" }}>
               🔧
             </button>

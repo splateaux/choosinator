@@ -1,0 +1,275 @@
+
+> validate
+> run-p 'test -- --run' lint typecheck test:e2e
+
+
+> lint
+> eslint --cache --cache-location ./node_modules/.cache/eslint .
+
+
+> test:e2e
+> PLAYWRIGHT_BASE_URL=http://localhost:3336 start-server-and-test 'PORT=3336 npm run dev' http://localhost:3336 'playwright test'
+
+
+> typecheck
+> tsc
+
+
+> test
+> vitest --run
+
+1: starting server using command "PORT=3336 npm run dev"
+and when url "[ 'http://localhost:3336' ]" is responding with HTTP status code 200
+running tests using command "playwright test"
+
+
+> dev
+> remix dev --manual -c 'arc sandbox -e testing'
+
+
+ RUN  v0.34.6 /home/splateaux/repos/choosinator
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ 💿  remix dev
+
+⚠️  Test routes enabled.
+[warn] Fetcher persistence behavior is changing in React Router v7
+┃ You can use the `v3_fetcherPersist` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_fetcherPersist
+┗
+[warn] Route discovery/manifest behavior is changing in React Router v7
+┃ You can use the `v3_lazyRouteDiscovery` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_lazyRouteDiscovery
+┗
+[warn] Relative routing behavior for splat routes is changing in React Router v7
+┃ You can use the `v3_relativeSplatPath` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_relativeSplatPath
+┗
+[warn] Data fetching is changing to a single fetch in React Router v7
+┃ You can use the `v3_singleFetch` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_singleFetch
+┗
+[warn] The format of errors thrown on aborted requests is changing in React Router v7
+┃ You can use the `v3_throwAbortReason` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_throwAbortReason
+┗
+[info] building...
+
+Running 15 tests using 4 workers
+
+ ✓ app/models/user.server.test.ts  (9 tests) 8ms
+ ✓ app/models/optionsList.server.test.ts  (6 tests) 8ms
+ ✓ app/session.server.test.ts  (12 tests) 12ms
+ ✓ app/models/optionsListSharing.server.test.ts  (5 tests) 7ms
+ ✓ app/utils.test.ts  (9 tests) 4ms
+
+ Test Files  5 passed (5)
+      Tests  41 passed (41)
+   Start at  15:02:30
+   Duration  1.00s (transform 238ms, setup 402ms, collect 347ms, tests 39ms, environment 791ms, prepare 1.04s)
+
+[1A[2K[1/15] tests/smoke.spec.ts:5:3 › smoke tests › should allow you to register and login
+[1A[2K[2/15] tests/auth.spec.ts:6:5 › Authentication › User Registration › should register a new user successfully
+[1A[2K[3/15] tests/sharing.spec.ts:14:3 › List Sharing › should allow users to share lists with other users
+[1A[2K[4/15] tests/options-lists.spec.ts:17:5 › Options Lists › Creating Options Lists › should create a new options list successfully
+[info] built (1.5s)
+[?25l[1A
+[?25l[1A
+[?25l[1A
+[?25l[1A
+[?25l[1A
+[90m         App [90m⌁[39m[90m[39m [36mchoosinator[39m
+[90m      Region [90m⌁[39m[90m[39m [36mus-west-2[39m
+[90m     Profile [90m⌁[39m[90m[39m [36m@aws profile / AWS_PROFILE not configured[39m
+[90m     Version [90m⌁[39m[90m[39m [36mArchitect 10.16.3[39m
+[90m         cwd [90m⌁[39m[90m[39m [36m/home/splateaux/repos/choosinator[39m
+
+[?25l[1A
+Error: Port 3336 (http) is already in use, please select another with prefs.arc
+See https://arc.codes/docs/en/reference/configuration/local-preferences#ports---list for config
+    at Socket.<anonymous> [90m(/home/splateaux/repos/choosinator/[39mnode_modules/[4m@architect[24m/sandbox/src/sandbox/ports.js:86:25[90m)[39m
+[90m    at Socket.emit (node:events:518:28)[39m
+[90m    at Socket.emit (node:domain:489:12)[39m
+[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1622:10)[39m
+[?25h[1A[2K  1) tests/auth.spec.ts:6:5 › Authentication › User Registration › should register a new user successfully 
+
+    Error: [31mTimed out 5000ms waiting for [39m[2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected string: [32m"http://localhost:3336/"[39m
+    Received string: [31m"http://localhost:3336/[7mjoin[27m"[39m
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 5000ms[22m
+    [2m    9 × unexpected value "http://localhost:3336/join"[22m
+
+
+      15 |
+      16 |       // Should be redirected and logged in
+    > 17 |       await expect(page).toHaveURL("/");
+         |                          ^
+      18 |       await expect(page.getByText(email)).toBeVisible();
+      19 |     });
+      20 |
+        at /home/splateaux/repos/choosinator/tests/auth.spec.ts:17:26
+
+    Error Context: test-results/auth-Authentication-User-R-e6e3f-ter-a-new-user-successfully/error-context.md
+
+
+[1A[2K[5/15] tests/auth.spec.ts:21:5 › Authentication › User Registration › should show error for short password
+[1A[2K[6/15] tests/auth.spec.ts:33:5 › Authentication › User Registration › should show error for empty password
+[1A[2K[7/15] tests/auth.spec.ts:46:5 › Authentication › User Login › should show error for non-existent user
+[1A[2K[8/15] tests/auth.spec.ts:58:5 › Authentication › User Login › should show error for short password
+[1A[2K[9/15] tests/auth.spec.ts:70:5 › Authentication › User Login › should show error for empty password
+[1A[2K[10/15] tests/auth.spec.ts:83:5 › Authentication › Logout › should logout successfully
+[1A[2K  2) tests/sharing.spec.ts:14:3 › List Sharing › should allow users to share lists with other users 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('link', { name: '+ New Options List' })[22m
+
+
+      19 |
+      20 |     // Create a new list
+    > 21 |     await page.getByRole("link", { name: "+ New Options List" }).click();
+         |                                                                  ^
+      22 |     await page.getByLabel("Name:").fill("My Shared List");
+      23 |     await page.getByRole("button", { name: "Save" }).click();
+      24 |
+        at /home/splateaux/repos/choosinator/tests/sharing.spec.ts:21:66
+
+    Error Context: test-results/sharing-List-Sharing-shoul-04467-hare-lists-with-other-users/error-context.md
+
+
+[1A[2K  3) tests/smoke.spec.ts:5:3 › smoke tests › should allow you to register and login ────────────────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('textbox', { name: /email/i })[22m
+
+
+      12 |     await page.getByRole("link", { name: /sign up/i }).click();
+      13 |
+    > 14 |     await page.getByRole("textbox", { name: /email/i }).fill(loginForm.email);
+         |                                                         ^
+      15 |     await page.getByLabel(/password/i).fill(loginForm.password);
+      16 |     await page.getByRole("button", { name: /create account/i }).click();
+      17 |
+        at /home/splateaux/repos/choosinator/tests/smoke.spec.ts:14:57
+
+    Error Context: test-results/smoke-smoke-tests-should-allow-you-to-register-and-login/error-context.md
+
+
+[1A[2K  4) tests/options-lists.spec.ts:17:5 › Options Lists › Creating Options Lists › should create a new options list successfully 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('link', { name: /new options list/i })[22m
+
+
+      19 |
+      20 |       await page.goto("/optionsLists");
+    > 21 |       await page.getByRole("link", { name: /new options list/i }).click();
+         |                                                                   ^
+      22 |
+      23 |       await page.getByLabel(/name/i).fill(listName);
+      24 |       await page.getByRole("button", { name: /save/i }).click();
+        at /home/splateaux/repos/choosinator/tests/options-lists.spec.ts:21:67
+
+    Error Context: test-results/options-lists-Options-List-93b94-w-options-list-successfully/error-context.md
+
+
+[1A[2K[11/15] tests/sharing.spec.ts:48:3 › List Sharing › should successfully share a list with another user
+[1A[2K[12/15] tests/options-lists.spec.ts:31:5 › Options Lists › Creating Options Lists › should show error for empty name
+[1A[2K  5) tests/sharing.spec.ts:48:3 › List Sharing › should successfully share a list with another user 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('link', { name: '+ New Options List' })[22m
+
+
+      59 |
+      60 |     // Create a new list
+    > 61 |     await page.getByRole("link", { name: "+ New Options List" }).click();
+         |                                                                  ^
+      62 |     await page.getByLabel("Name:").fill("My Shared List");
+      63 |     await page.getByRole("button", { name: "Save" }).click();
+      64 |
+        at /home/splateaux/repos/choosinator/tests/sharing.spec.ts:61:66
+
+    Error Context: test-results/sharing-List-Sharing-shoul-c42b2-re-a-list-with-another-user/error-context.md
+
+
+[1A[2K  6) tests/options-lists.spec.ts:31:5 › Options Lists › Creating Options Lists › should show error for empty name 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: /save/i })[22m
+
+
+      32 |       await page.goto("/optionsLists/new");
+      33 |
+    > 34 |       await page.getByRole("button", { name: /save/i }).click();
+         |                                                         ^
+      35 |
+      36 |       await expect(page.getByText("Name is required")).toBeVisible();
+      37 |     });
+        at /home/splateaux/repos/choosinator/tests/options-lists.spec.ts:34:57
+
+    Error Context: test-results/options-lists-Options-List-27c56-d-show-error-for-empty-name/error-context.md
+
+
+[1A[2K[13/15] tests/sharing.spec.ts:97:3 › List Sharing › should show shared lists in the sidebar
+[1A[2K[14/15] tests/options-lists.spec.ts:39:5 › Options Lists › Creating Options Lists › should show the new list in the options lists page
+[1A[2K  7) tests/sharing.spec.ts:97:3 › List Sharing › should show shared lists in the sidebar ───────────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByLabel('Name:')[22m
+
+
+       98 |     // Ensure at least one list exists so the sidebar renders headings
+       99 |     await page.goto("/optionsLists/new");
+    > 100 |     await page.getByLabel("Name:").fill("Sidebar Check List");
+          |                                    ^
+      101 |     await page.getByRole("button", { name: "Save" }).click();
+      102 |
+      103 |     // Navigate to the options lists page
+        at /home/splateaux/repos/choosinator/tests/sharing.spec.ts:100:36
+
+    Error Context: test-results/sharing-List-Sharing-should-show-shared-lists-in-the-sidebar/error-context.md
+
+
+[1A[2K  8) tests/options-lists.spec.ts:39:5 › Options Lists › Creating Options Lists › should show the new list in the options lists page 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByLabel(/name/i)[22m
+
+
+      44 |       // Create the list
+      45 |       await page.goto("/optionsLists/new");
+    > 46 |       await page.getByLabel(/name/i).fill(listName);
+         |                                      ^
+      47 |       await page.getByRole("button", { name: /save/i }).click();
+      48 |
+      49 |       // Should see the list
+        at /home/splateaux/repos/choosinator/tests/options-lists.spec.ts:46:38
+
+    Error Context: test-results/options-lists-Options-List-6192c-t-in-the-options-lists-page/error-context.md
+
+
+[1A[2K[15/15] tests/sharing.spec.ts:111:3 › List Sharing › should show sharing indicator for shared lists

@@ -3,7 +3,6 @@ import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import {
   Links,
-  LiveReload,
   Meta,
   Outlet,
   Scripts,
@@ -15,6 +14,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 
 import { getUser } from "~/session.server";
 import stylesheet from "~/tailwind.css";
+import { trackWebVitals } from "~/utils/performance";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -59,13 +59,22 @@ export function ErrorBoundary() {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState("dark-mode");
+  const [theme, setTheme] = useState("light-mode");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    setIsHydrated(true);
     const storedTheme = localStorage.getItem("theme") || "light-mode";
     setTheme(storedTheme);
     document.body.className = storedTheme;
   }, []);
+
+  useEffect(() => {
+    // Initialize performance tracking in development
+    if (isHydrated && process.env.NODE_ENV === "development") {
+      trackWebVitals();
+    }
+  }, [isHydrated]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light-mode" ? "dark-mode" : "light-mode";
@@ -88,7 +97,6 @@ export default function App() {
           <Outlet />
           <ScrollRestoration />
           <Scripts />
-          <LiveReload />
         </body>
       </html>
     </ThemeContext.Provider>
