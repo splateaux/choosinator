@@ -7,7 +7,7 @@ import {
   useLoaderData,
   useRevalidator,
 } from "@remix-run/react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 
 import { getOptionsForList } from "~/models/option.server";
@@ -98,6 +98,13 @@ export function shouldRevalidate(args: {
   return true;
 }
 
+// Vote buffering configuration
+const VOTE_DEBOUNCE_MS = 600;
+
+// Type aliases to avoid Record type issues
+type VoteBuffer = Record<string, number>;
+type TimerMap = Record<string, ReturnType<typeof setTimeout>>;
+
 export default function PollPublicPage() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -115,6 +122,10 @@ export default function PollPublicPage() {
 
   const isSubmittingRef = useRef(false);
   const lastSubmitRef = useRef(0);
+
+  // Local vote buffer state
+  const [localVoteBuffer, setLocalVoteBuffer] = useState<VoteBuffer>({});
+  const debounceTimersRef = useRef<TimerMap>({});
 
   // Heartbeat to announce presence and poll participants periodically
   useEffect(() => {
@@ -176,6 +187,7 @@ export default function PollPublicPage() {
         pollId?: string;
         optionId?: string;
         updatedAt?: string;
+        userId?: string;
       };
       try {
         msg = JSON.parse(String(event.data));
@@ -199,6 +211,21 @@ export default function PollPublicPage() {
         return;
       }
 
+      // Reconcile local buffer when we receive server updates
+      if (msg.userId === data.voterId && msg.optionId) {
+        // Clear local buffer for this option since server has confirmed the change
+        setLocalVoteBuffer((prev) => {
+          const newBuffer = { ...prev };
+          delete newBuffer[msg.optionId!];
+          return newBuffer;
+        });
+        // Clear any pending timer
+        if (debounceTimersRef.current[msg.optionId!]) {
+          clearTimeout(debounceTimersRef.current[msg.optionId!]);
+          delete debounceTimersRef.current[msg.optionId!];
+        }
+      }
+
       revalidateRef.current();
     };
 
@@ -212,6 +239,140 @@ export default function PollPublicPage() {
 
     return () => ws.close();
   }, [data.poll.id, data.voterId, data.ENV?.WS_URL]);
+
+  // Vote buffering utilities
+  const submitBufferedVotes = useCallback(
+    async (optionId: string, deltaToSend: number) => {
+      // if another reconciliation already zeroed it, skip
+      if (!deltaToSend) return;
+
+      const formData = new FormData();
+      formData.append("intent", "vote.adjust");
+      formData.append("pollId", data.poll.id);
+      formData.append("optionId", optionId);
+      formData.append("delta", String(deltaToSend));
+
+      try {
+        const res = await fetch(`/polls/${data.poll.id}`, {
+          method: "POST",
+          body: formData,
+        });
+        if (res.ok) {
+          // optimistic clear only for this option
+          setLocalVoteBuffer((prev) => {
+            // only subtract the amount we sent; if more clicks happened, preserve remainder
+            const latest = prev[optionId] ?? 0;
+            const remainder = latest - deltaToSend;
+            if (remainder === 0) {
+              const newBuffer = { ...prev };
+              delete newBuffer[optionId];
+              return newBuffer;
+            }
+            return { ...prev, [optionId]: remainder };
+          });
+        }
+      } finally {
+        const t = debounceTimersRef.current[optionId];
+        if (t) {
+          clearTimeout(t);
+          delete debounceTimersRef.current[optionId];
+        }
+      }
+    },
+    [data.poll.id],
+  );
+
+  const queueVoteDelta = useCallback(
+    (optionId: string, delta: number) => {
+      setLocalVoteBuffer((prev) => {
+        const serverUserVotes =
+          data.votes.byOption[optionId]?.byUser?.[data.voterId] ?? 0;
+        const currentLocal = prev[optionId] ?? 0;
+
+        const effectiveUserVotes = serverUserVotes + currentLocal;
+
+        // guard decreases: don't go below 0
+        if (delta < 0 && effectiveUserVotes <= 0) return prev;
+
+        // recompute fresh remaining with this local map
+        const bufferedTotalDelta = Object.values(prev).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        const serverUserTotal = data.votes.totalsByUser[data.voterId] ?? 0;
+        const effectiveRemaining = Math.max(
+          0,
+          data.maxTokens - (serverUserTotal + bufferedTotalDelta),
+        );
+
+        // guard increases: no increases if no remaining
+        if (delta > 0 && effectiveRemaining <= 0) return prev;
+
+        const nextLocal = (prev[optionId] ?? 0) + delta;
+
+        // schedule / reset debounce
+        const t = debounceTimersRef.current[optionId];
+        if (t) clearTimeout(t);
+        debounceTimersRef.current[optionId] = setTimeout(() => {
+          // Pass the delta value explicitly to avoid stale closures
+          submitBufferedVotes(optionId, nextLocal);
+        }, VOTE_DEBOUNCE_MS);
+
+        return { ...prev, [optionId]: nextLocal };
+      });
+    },
+    [data.votes, data.voterId, data.maxTokens, submitBufferedVotes],
+  );
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    const currentTimers = debounceTimersRef.current;
+    return () => {
+      Object.values(currentTimers).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
+  // Computed vote values including local buffer
+  const computedVotes = useMemo(() => {
+    const serverUserTotal = data.votes.totalsByUser[data.voterId] ?? 0;
+    const bufferedTotalDelta = Object.values(localVoteBuffer).reduce(
+      (a, b) => a + b,
+      0,
+    );
+    const effectiveRemaining = Math.max(
+      0,
+      data.maxTokens - (serverUserTotal + bufferedTotalDelta),
+    );
+
+    const map: Record<
+      string,
+      {
+        currentUserVotes: number; // optimistic (server + local)
+        serverTotal: number; // server-only (do NOT add local)
+        canIncrease: boolean;
+        canDecrease: boolean;
+      }
+    > = {};
+
+    for (const opt of data.options) {
+      const serverUserVotes =
+        data.votes.byOption[opt.id]?.byUser?.[data.voterId] ?? 0;
+      const localDelta = localVoteBuffer[opt.id] ?? 0;
+
+      const effectiveUserVotes = Math.max(0, serverUserVotes + localDelta);
+      const serverTotal = data.votes.byOption[opt.id]?.total ?? 0; // leave untouched
+
+      map[opt.id] = {
+        currentUserVotes: effectiveUserVotes,
+        serverTotal,
+        canIncrease: effectiveRemaining > 0,
+        canDecrease: effectiveUserVotes > 0,
+      };
+    }
+    return map;
+  }, [data.options, data.votes, data.voterId, localVoteBuffer, data.maxTokens]);
 
   return (
     <main
@@ -420,9 +581,7 @@ export default function PollPublicPage() {
               {data.options
                 .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically for easy finding
                 .map((opt) => {
-                  const byUser = data.votes.byOption[opt.id]?.byUser || {};
-                  const total = data.votes.byOption[opt.id]?.total || 0;
-                  const currentUserVotes = byUser[data.voterId] || 0;
+                  const computed = computedVotes[opt.id];
 
                   return (
                     <li
@@ -440,42 +599,31 @@ export default function PollPublicPage() {
                             ) : null}
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
-                            Your votes: {currentUserVotes} | Total: {total}
+                            Your votes: {computed.currentUserVotes} | Total:{" "}
+                            {computed.serverTotal}
                           </div>
                         </div>
-                        <Form method="post" className="flex items-center gap-2">
-                          <input
-                            type="hidden"
-                            name="intent"
-                            value="vote.adjust"
-                          />
-                          <input
-                            type="hidden"
-                            name="pollId"
-                            value={data.poll.id}
-                          />
-                          <input type="hidden" name="optionId" value={opt.id} />
+                        {/* Replace Form with div + onClick handlers */}
+                        <div className="flex items-center gap-2">
                           <button
-                            type="submit"
-                            name="delta"
-                            value={-1}
+                            type="button"
+                            onClick={() => queueVoteDelta(opt.id, -1)}
                             className="rounded border px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label={`Decrease tokens for ${opt.name}`}
-                            disabled={currentUserVotes <= 0}
+                            disabled={!computed.canDecrease}
                           >
                             −
                           </button>
                           <button
-                            type="submit"
-                            name="delta"
-                            value={1}
+                            type="button"
+                            onClick={() => queueVoteDelta(opt.id, 1)}
                             className="rounded border px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label={`Increase tokens for ${opt.name}`}
-                            disabled={total >= data.maxTokens}
+                            disabled={!computed.canIncrease}
                           >
                             +
                           </button>
-                        </Form>
+                        </div>
                       </div>
                     </li>
                   );
@@ -489,7 +637,12 @@ export default function PollPublicPage() {
             Remaining balance:{" "}
             {Math.max(
               0,
-              data.maxTokens - (data.votes.totalsByUser[data.voterId] || 0),
+              data.maxTokens -
+                (data.votes.totalsByUser[data.voterId] || 0) -
+                Object.values(localVoteBuffer).reduce(
+                  (sum, delta) => sum + delta,
+                  0,
+                ),
             )}{" "}
             tokens
           </div>

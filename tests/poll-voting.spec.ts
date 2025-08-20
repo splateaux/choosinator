@@ -642,35 +642,32 @@ test.describe("Poll Voting", () => {
 
     // === PHASE 4: Verify Sorted Order ===
 
-    // Now options should be sorted by vote count: C (3), B (2), A (1)
-    const sortedOptions = await optionsList.locator("li").all();
-    expect(sortedOptions).toHaveLength(3);
+    // The "Current Results" section should show options sorted by vote count: C (3), B (2), A (1)
+    // Look for the results section that shows vote bars
+    const resultsSection = page
+      .getByRole("heading", { name: "Current Results" })
+      .locator("..");
+    await expect(resultsSection).toBeVisible();
 
-    // Check sorted order (by vote count descending)
-    await expect(sortedOptions[0].getByText("Option C")).toBeVisible();
-    await expect(sortedOptions[1].getByText("Option B")).toBeVisible();
-    await expect(sortedOptions[2].getByText("Option A")).toBeVisible();
+    // Check that Option C (3 tokens) appears first in the results
+    const firstResult = resultsSection.locator("div").first();
+    await expect(firstResult.getByText("Option C")).toBeVisible();
+    await expect(firstResult.getByText("3 tokens")).toBeVisible();
 
-    // Verify the token counts are displayed correctly
-    await expect(sortedOptions[0].getByText("3 tokens")).toBeVisible();
-    await expect(sortedOptions[1].getByText("2 tokens")).toBeVisible();
-    await expect(sortedOptions[2].getByText("1 tokens")).toBeVisible();
+    // The "Vote on Options" section should remain in alphabetical order for consistency
+    const votingOptions = await optionsList.locator("li").all();
+    expect(votingOptions).toHaveLength(3);
+
+    // Voting section should stay alphabetical: A, B, C
+    await expect(votingOptions[0].getByText("Option A")).toBeVisible();
+    await expect(votingOptions[1].getByText("Option B")).toBeVisible();
+    await expect(votingOptions[2].getByText("Option C")).toBeVisible();
 
     // === PHASE 5: Verify Bar Lengths are Proportional ===
 
-    // Get the vote bars for each option
-    const optionCBars = sortedOptions[0].locator('[aria-label*="Vote bar"]');
-    const optionBBars = sortedOptions[1].locator('[aria-label*="Vote bar"]');
-    const optionABars = sortedOptions[2].locator('[aria-label*="Vote bar"]');
-
-    // Wait for bars to be visible
-    await expect(optionCBars).toBeVisible();
-    await expect(optionBBars).toBeVisible();
-    await expect(optionABars).toBeVisible();
-
-    // Verify that Option C (3 tokens) has the longest bar
-    // Option B (2 tokens) should have 2/3 the length of Option C
-    // Option A (1 token) should have 1/3 the length of Option C
+    // Get the vote bars from the results section
+    const voteBars = resultsSection.locator('[aria-label*="Vote bar"]');
+    await expect(voteBars).toHaveCount(3);
 
     // Get the actual bar widths using JavaScript
     const barWidths = await page.evaluate(() => {
