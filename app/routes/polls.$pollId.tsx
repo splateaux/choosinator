@@ -35,7 +35,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const userId = await getUserId(request);
   const guestName = await getGuestName(request);
   const session = await getSession(request);
-  const voterId = userId ?? `session#${session.id}`;
+  // Use guest name for anonymous users to ensure unique identification
+  const voterId =
+    userId ?? (guestName ? `guest#${guestName}` : `session#${session.id}`);
+
   const votes = await getVotesForPoll(poll.id);
   return json({
     poll,
@@ -71,12 +74,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const pollId = formData.get("pollId") as string;
     const optionId = formData.get("optionId") as string;
     const delta = Number(formData.get("delta"));
-    const userId =
-      (await getUserId(request)) ?? `session#${(await getSession(request)).id}`;
+    const userId = await getUserId(request);
+    const guestName = await getGuestName(request);
+    const session = await getSession(request);
+    // Use guest name for anonymous users to ensure unique identification
+    const voterId =
+      userId ?? (guestName ? `guest#${guestName}` : `session#${session.id}`);
+
     invariant(pollId, "pollId missing");
     invariant(optionId, "optionId missing");
     invariant(!Number.isNaN(delta), "delta missing");
-    const result = await adjustVoteTokens({ pollId, optionId, userId, delta });
+    const result = await adjustVoteTokens({
+      pollId,
+      optionId,
+      userId: voterId,
+      delta,
+    });
     return json({ ok: true, ...result });
   }
 
@@ -573,6 +586,12 @@ export default function PollPublicPage() {
           <h2 className="text-xl font-semibold mb-2">Vote on Options</h2>
           {data.options.length === 0 ? (
             <p className="text-sm text-gray-500">No options available.</p>
+          ) : !data.userId && !data.guestName ? (
+            <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+              <p className="mb-4">
+                Please sign in or set a guest name above to vote on options.
+              </p>
+            </div>
           ) : (
             <ul
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
