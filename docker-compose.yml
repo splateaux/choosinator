@@ -1,0 +1,52 @@
+services:
+  # Cosmos DB Emulator
+  cosmos-emulator:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    container_name: choosinator-cosmos-emulator
+    ports:
+      - "8081:8081" # HTTPS endpoint
+      - "10251:10251" # Internal communication
+      - "10252:10252" # Internal communication
+      - "10253:10253" # Internal communication
+      - "10254:10254" # Internal communication
+    environment:
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+      - AZURE_COSMOS_EMULATOR_DATA_PERSISTENCE_PATH=/data
+    volumes:
+      - cosmos-data:/data
+    healthcheck:
+      test:
+        ["CMD", "curl", "-f", "https://localhost:8081/_explorer/emulator.pem"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Azure Storage Emulator (for Functions runtime)
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: choosinator-azurite
+    ports:
+      - "10000:10000" # Blob service
+      - "10001:10001" # Queue service
+      - "10002:10002" # Table service
+    environment:
+      - AZURITE_ACCOUNTS=devstoreaccount1:devstoreaccount1
+    volumes:
+      - azurite-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:10000/devstoreaccount1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  cosmos-data:
+  azurite-data:
+
+networks:
+  default:
+    name: choosinator-network
