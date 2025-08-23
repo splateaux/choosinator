@@ -1,6 +1,6 @@
-import arc from "@architect/functions";
 import { createId } from "@paralleldrive/cuid2";
 
+import { getAzureDatabase } from "~/lib/azure-db.server";
 import { PerformanceMonitor } from "~/utils/performance";
 
 import { OptionsList } from "./optionsList.server";
@@ -29,12 +29,14 @@ export async function shareOptionsList({
   return PerformanceMonitor.measureAsync(
     `DB: shareOptionsList(${optionsListId}, ${sharedWithUserId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
+      const shareId = `${optionsListId}#${sharedWithUserId}`;
 
-      const result = await db.optionsListSharing.put({
+      const result = await db.put("optionsListSharing", {
+        id: shareId,
         optionsListId: optionsListId,
         sharedWithUserId: sharedWithUserId,
-        userId: ownerUserId,
+        ownerUserId: ownerUserId,
         permission,
         createdAt: new Date().toISOString(),
       });
@@ -42,7 +44,7 @@ export async function shareOptionsList({
       return {
         id: createId(),
         optionsListId: result.optionsListId,
-        ownerUserId: result.userId,
+        ownerUserId: result.ownerUserId,
         sharedWithUserId: result.sharedWithUserId,
         permission: result.permission ?? "edit",
         createdAt: result.createdAt,
@@ -61,13 +63,10 @@ export async function unshareOptionsList({
   return PerformanceMonitor.measureAsync(
     `DB: unshareOptionsList(${optionsListId}, ${sharedWithUserId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
+      const shareId = `${optionsListId}#${sharedWithUserId}`;
 
-      // With the new table structure, the primary key is optionsListId + sharedWithUserId
-      await db.optionsListSharing.delete({
-        optionsListId,
-        sharedWithUserId,
-      });
+      await db.delete("optionsListSharing", shareId, optionsListId);
     },
   );
 }
@@ -78,23 +77,27 @@ export async function getSharedOptionsListsForUser(
   return PerformanceMonitor.measureAsync(
     `DB: getSharedOptionsListsForUser(${userId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
 
-      // Use the GSI (sharedWithUserId-optionsListId-index) to query by sharedWithUserId
-      const results = await db.optionsListSharing.query({
-        IndexName: "sharedWithUserId-optionsListId-index",
-        KeyConditionExpression: "sharedWithUserId = :sharedWithUserId",
-        ExpressionAttributeValues: {
-          ":sharedWithUserId": userId,
-        },
-      });
+      const results = await db.query<{
+        id: string;
+        optionsListId: string;
+        ownerUserId: string;
+        sharedWithUserId: string;
+        permission: string;
+        createdAt: string;
+      }>(
+        "optionsListSharing",
+        "SELECT * FROM c WHERE c.sharedWithUserId = @sharedWithUserId",
+        [{ name: "@sharedWithUserId", value: userId }],
+      );
 
-      return results.Items.map((item) => ({
+      return results.map((item) => ({
         id: createId(),
         optionsListId: item.optionsListId,
-        ownerUserId: item.userId,
+        ownerUserId: item.ownerUserId,
         sharedWithUserId: item.sharedWithUserId,
-        permission: item.permission ?? "edit",
+        permission: (item.permission as "view" | "edit") ?? "edit",
         createdAt: item.createdAt,
       }));
     },
@@ -107,19 +110,19 @@ export async function getSharedUsersForOptionsList({
   return PerformanceMonitor.measureAsync(
     `DB: getSharedUsersForOptionsList(${optionsListId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
 
-      // Use the base table PK (optionsListId + sharedWithUserId) to get all shares for this list
-      const results = await db.optionsListSharing.query({
-        KeyConditionExpression: "optionsListId = :optionsListId",
-        ExpressionAttributeValues: {
-          ":optionsListId": optionsListId,
-        },
-      });
+      const results = await db.query<{
+        sharedWithUserId: string;
+      }>(
+        "optionsListSharing",
+        "SELECT c.sharedWithUserId FROM c WHERE c.optionsListId = @optionsListId",
+        [{ name: "@optionsListId", value: optionsListId }],
+      );
 
       // Get user details for each shared user
       const sharedUsers: User[] = [];
-      for (const item of results.Items) {
+      for (const item of results) {
         const user = await import("./user.server").then((m) =>
           m.getUserById(item.sharedWithUserId),
         );
@@ -144,23 +147,27 @@ export async function getUserSharesForOptionsList({
   return PerformanceMonitor.measureAsync(
     `DB: getUserSharesForOptionsList(${optionsListId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
 
-      // Use the base table PK (optionsListId + sharedWithUserId)
-      const results = await db.optionsListSharing.query({
-        KeyConditionExpression: "optionsListId = :optionsListId",
-        ExpressionAttributeValues: {
-          ":optionsListId": optionsListId,
-        },
-      });
+      const results = await db.query<{
+        sharedWithUserId: string;
+        permission: string;
+      }>(
+        "optionsListSharing",
+        "SELECT c.sharedWithUserId, c.permission FROM c WHERE c.optionsListId = @optionsListId",
+        [{ name: "@optionsListId", value: optionsListId }],
+      );
 
       const shares: OptionsListUserShare[] = [];
-      for (const item of results.Items) {
+      for (const item of results) {
         const user = await import("./user.server").then((m) =>
           m.getUserById(item.sharedWithUserId),
         );
         if (user) {
-          shares.push({ user, permission: item.permission ?? "edit" });
+          shares.push({
+            user,
+            permission: (item.permission as "view" | "edit") ?? "edit",
+          });
         }
       }
 
@@ -179,20 +186,18 @@ export async function isOptionsListSharedWithUser({
   return PerformanceMonitor.measureAsync(
     `DB: isOptionsListSharedWithUser(${optionsListId}, ${sharedWithUserId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
 
-      // Use the GSI (sharedWithUserId-optionsListId-index) to query by sharedWithUserId and optionsListId
-      const results = await db.optionsListSharing.query({
-        IndexName: "sharedWithUserId-optionsListId-index",
-        KeyConditionExpression:
-          "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
-        ExpressionAttributeValues: {
-          ":sharedWithUserId": sharedWithUserId,
-          ":optionsListId": optionsListId,
-        },
-      });
+      const results = await db.query<{ id: string }>(
+        "optionsListSharing",
+        "SELECT c.id FROM c WHERE c.sharedWithUserId = @sharedWithUserId AND c.optionsListId = @optionsListId",
+        [
+          { name: "@sharedWithUserId", value: sharedWithUserId },
+          { name: "@optionsListId", value: optionsListId },
+        ],
+      );
 
-      return results.Items.length > 0;
+      return results.length > 0;
     },
   );
 }
@@ -210,27 +215,30 @@ export async function getShareRecordForUser({
   return PerformanceMonitor.measureAsync(
     `DB: getShareRecordForUser(${optionsListId}, ${sharedWithUserId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
 
-      // Use the GSI (sharedWithUserId-optionsListId-index) to query by sharedWithUserId + optionsListId
-      const results = await db.optionsListSharing.query({
-        IndexName: "sharedWithUserId-optionsListId-index",
-        KeyConditionExpression:
-          "sharedWithUserId = :sharedWithUserId AND optionsListId = :optionsListId",
-        ExpressionAttributeValues: {
-          ":sharedWithUserId": sharedWithUserId,
-          ":optionsListId": optionsListId,
-        },
-        Limit: 1,
-      });
+      const results = await db.query<{
+        optionsListId: string;
+        ownerUserId: string;
+        sharedWithUserId: string;
+        permission: string;
+        createdAt: string;
+      }>(
+        "optionsListSharing",
+        "SELECT * FROM c WHERE c.sharedWithUserId = @sharedWithUserId AND c.optionsListId = @optionsListId",
+        [
+          { name: "@sharedWithUserId", value: sharedWithUserId },
+          { name: "@optionsListId", value: optionsListId },
+        ],
+      );
 
-      if (results.Items.length === 0) return null;
-      const item = results.Items[0];
+      if (results.length === 0) return null;
+      const item = results[0];
       return {
         optionsListId: item.optionsListId,
-        ownerUserId: item.userId as User["id"],
+        ownerUserId: item.ownerUserId as User["id"],
         sharedWithUserId: item.sharedWithUserId,
-        permission: item.permission ?? "edit",
+        permission: (item.permission as "view" | "edit") ?? "edit",
         createdAt: item.createdAt,
       };
     },
@@ -253,6 +261,7 @@ export async function isOptionsListEditableByUser({
   });
   return record?.permission === "edit";
 }
+
 export async function updateSharePermission({
   optionsListId,
   ownerUserId,
@@ -265,13 +274,14 @@ export async function updateSharePermission({
   return PerformanceMonitor.measureAsync(
     `DB: updateSharePermission(${optionsListId}, ${sharedWithUserId}, ${permission})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
+      const shareId = `${optionsListId}#${sharedWithUserId}`;
 
-      // With the new table structure, the primary key is optionsListId + sharedWithUserId
-      await db.optionsListSharing.put({
+      await db.put("optionsListSharing", {
+        id: shareId,
         optionsListId,
         sharedWithUserId,
-        userId: ownerUserId,
+        ownerUserId,
         permission,
         createdAt: new Date().toISOString(), // Update the timestamp
       });

@@ -1,6 +1,6 @@
-import arc from "@architect/functions";
 import { createId } from "@paralleldrive/cuid2";
 
+import { getAzureDatabase } from "~/lib/azure-db.server";
 import { PerformanceMonitor } from "~/utils/performance";
 
 import { User } from "./user.server";
@@ -22,16 +22,13 @@ export async function getOptionsList({
   return PerformanceMonitor.measureAsync(
     `DB: getOptionsList(${id})`,
     async () => {
-      const db = await arc.tables();
-      const result = await db.optionsList.get({
-        userId: ownerUserId,
-        optionsListId: id,
-      });
+      const db = getAzureDatabase();
+      const result = await db.get<OptionsList>("optionsList", id, ownerUserId);
 
       if (result) {
         return {
-          ownerUserId: result.userId,
-          id: result.optionsListId,
+          ownerUserId: result.ownerUserId,
+          id: result.id,
           name: result.name,
         };
       }
@@ -51,16 +48,13 @@ export async function getOptionsListForUser({
     `DB: getOptionsListForUser(${id}, ${userId})`,
     async () => {
       // First try to get as owner
-      const db = await arc.tables();
-      const result = await db.optionsList.get({
-        userId: userId,
-        optionsListId: id,
-      });
+      const db = getAzureDatabase();
+      const result = await db.get<OptionsList>("optionsList", id, userId);
 
       if (result) {
         return {
-          ownerUserId: result.userId,
-          id: result.optionsListId,
+          ownerUserId: result.ownerUserId,
+          id: result.id,
           name: result.name,
         };
       }
@@ -96,18 +90,17 @@ export async function getOptionsListsByOwner(
   return PerformanceMonitor.measureAsync(
     `DB: getOptionsListsByOwner(${ownerUserId})`,
     async () => {
-      const db = await arc.tables();
+      const db = getAzureDatabase();
 
-      const results = await db.optionsList.query({
-        KeyConditionExpression: "userId = :ownerUserId",
-        ExpressionAttributeValues: {
-          ":ownerUserId": ownerUserId,
-        },
-      });
+      const results = await db.query<OptionsList>(
+        "optionsList",
+        "SELECT * FROM c WHERE c.ownerUserId = @ownerUserId",
+        [{ name: "@ownerUserId", value: ownerUserId }],
+      );
 
-      return results.Items.map((item) => ({
-        id: item.optionsListId,
-        ownerUserId: item.userId,
+      return results.map((item) => ({
+        id: item.id,
+        ownerUserId: item.ownerUserId,
         name: item.name,
       }));
     },
@@ -152,16 +145,16 @@ export async function createOptionsList({
   name,
   ownerUserId,
 }: Pick<OptionsList, "name" | "ownerUserId">): Promise<OptionsList> {
-  const db = await arc.tables();
+  const db = getAzureDatabase();
 
-  const result = await db.optionsList.put({
-    userId: ownerUserId,
-    optionsListId: createId(),
+  const result = await db.put("optionsList", {
+    id: createId(),
+    ownerUserId: ownerUserId,
     name: name,
   });
   return {
-    id: result.optionsListId,
-    ownerUserId: result.userId,
+    id: result.id,
+    ownerUserId: result.ownerUserId,
     name: result.name,
   };
 }
@@ -170,6 +163,6 @@ export async function deleteOptionsList({
   id,
   ownerUserId,
 }: Pick<OptionsList, "id" | "ownerUserId">) {
-  const db = await arc.tables();
-  return db.optionsList.delete({ userId: ownerUserId, optionsListId: id });
+  const db = getAzureDatabase();
+  return db.delete("optionsList", id, ownerUserId);
 }

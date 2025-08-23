@@ -19,9 +19,10 @@
     "typecheck": "tsc",
     "azure:functions": "cd functions && func start --port 7071 --cors *",
     "azure:dev": "concurrently \"npm run azure:functions\" \"npm run dev:azure\"",
-    "dev:azure": "cross-env PORT=3000 API_BASE_URL=http://localhost:7071 remix dev -c 'node server.ts'"
+    "dev:azure": "cross-env PORT=3000 API_BASE_URL=http://localhost:7071 remix dev"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.5.0",
     "@paralleldrive/cuid2": "^2.2.2",
     "@remix-run/css-bundle": "2.17.0",
     "@remix-run/node": "2.17.0",
@@ -36,6 +37,7 @@
     "@faker-js/faker": "^8.4.1",
     "@playwright/test": "^1.54.2",
     "@remix-run/dev": "2.17.0",
+    "@remix-run/serve": "^2.17.0",
     "@testing-library/jest-dom": "^6.6.4",
     "@types/eslint": "^8.56.12",
     "@types/node": "^18.19.121",
@@ -69,6 +71,7 @@
     "postcss": "^8.5.6",
     "prettier": "^3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.14",
+    "remix-serve": "^1.0.3",
     "start-server-and-test": "^2.0.12",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.1.6",

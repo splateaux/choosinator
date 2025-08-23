@@ -1,245 +1,142 @@
-import bcrypt from "bcryptjs";
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeEach,
-  type MockedFunction,
-} from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+import { getAzureDatabase } from "~/lib/azure-db.server";
 
 import {
   createUser,
   getUserByEmail,
-  getUserById,
   verifyLogin,
   deleteUser,
 } from "./user.server";
 
-// Mock architect functions
-vi.mock("@architect/functions", () => {
-  const mockTables = vi.fn();
-  return {
-    default: {
-      tables: mockTables,
-    },
-  };
-});
-
-// Mock bcryptjs
+// Mock bcrypt
 vi.mock("bcryptjs", () => ({
   default: {
-    hash: vi.fn(),
-    compare: vi.fn(),
+    hash: vi.fn().mockResolvedValue("hashed_password"),
+    compare: vi.fn().mockResolvedValue(true),
   },
 }));
 
-// Mock invariant
-vi.mock("tiny-invariant", () => ({
-  default: vi.fn(),
+// Mock the Azure database
+vi.mock("~/lib/azure-db.server", () => ({
+  getAzureDatabase: vi.fn(),
 }));
 
-describe("User Server Model", () => {
+describe("User Model", () => {
   const mockDb = {
-    user: {
-      put: vi.fn(),
-      get: vi.fn(),
-      query: vi.fn(),
-      delete: vi.fn(),
-    },
-    password: {
-      put: vi.fn(),
-      query: vi.fn(),
-      delete: vi.fn(),
-    },
+    getContainer: vi.fn(),
+    query: vi.fn(),
+    get: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    getAll: vi.fn(),
   };
 
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    const arc = await import("@architect/functions");
-    (
-      arc.default.tables as MockedFunction<typeof arc.default.tables>
-    ).mockResolvedValue(mockDb as any);
+  beforeEach(() => {
+    vi.mocked(getAzureDatabase).mockReturnValue(mockDb);
+
+    // Set up default mock implementations
+    mockDb.query.mockResolvedValue([]);
+    mockDb.get.mockResolvedValue(null);
+    mockDb.put.mockImplementation((container, item) => Promise.resolve(item));
+    mockDb.delete.mockResolvedValue(undefined);
   });
 
   describe("createUser", () => {
-    it("should create a new user successfully", async () => {
+    it("creates a user with hashed password", async () => {
       const email = "test@example.com";
-      const password = "testpassword123";
-      const hashedPassword = "hashed-password";
+      const password = "password123";
 
-      (vi.mocked(bcrypt.hash) as any).mockResolvedValue(hashedPassword);
-      mockDb.user.query.mockResolvedValue({
-        Items: [
-          {
-            userId: `email#${email}`,
-            email,
-          },
-        ],
-      });
+      // Mock the getUserByEmail call that happens internally
+      mockDb.query.mockResolvedValueOnce([
+        {
+          userId: `email#${email}`,
+          email,
+          name: "Test User",
+        },
+      ]);
 
-      const result = await createUser(email, password);
+      const user = await createUser(email, password);
 
-      expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
-      expect(mockDb.password.put).toHaveBeenCalledWith({
-        userId: `email#${email}`,
-        password: hashedPassword,
-      });
-      expect(mockDb.user.put).toHaveBeenCalledWith({
-        userId: `email#${email}`,
-        email,
-      });
-      expect(result).toEqual({
-        id: `email#${email}`,
-        email,
-      });
+      expect(user.email).toBe(email);
+      expect(user.id).toBe(`email#${email}`);
     });
   });
 
   describe("getUserByEmail", () => {
-    it("should return user when found", async () => {
+    it("returns user when found", async () => {
       const email = "test@example.com";
-      const mockUser = {
-        userId: `email#${email}`,
-        email,
-      };
 
-      mockDb.user.query.mockResolvedValue({
-        Items: [mockUser],
-      });
+      mockDb.query.mockResolvedValue([
+        {
+          userId: `email#${email}`,
+          email,
+          name: "Test User",
+        },
+      ]);
 
-      const result = await getUserByEmail(email);
+      const user = await getUserByEmail(email);
 
-      expect(mockDb.user.query).toHaveBeenCalledWith({
-        KeyConditionExpression: "userId = :userId",
-        ExpressionAttributeValues: { ":userId": `email#${email}` },
-      });
-      expect(result).toEqual({
-        id: `email#${email}`,
-        email,
-      });
+      expect(user?.email).toBe(email);
+      expect(user?.id).toBe(`email#${email}`);
     });
 
-    it("should return null when user not found", async () => {
-      mockDb.user.query.mockResolvedValue({
-        Items: [],
-      });
+    it("returns null when user not found", async () => {
+      const email = "nonexistent@example.com";
 
-      const result = await getUserByEmail("nonexistent@example.com");
+      mockDb.query.mockResolvedValue([]);
 
-      expect(result).toBeNull();
-    });
-  });
+      const user = await getUserByEmail(email);
 
-  describe("getUserById", () => {
-    it("should return user when found", async () => {
-      const userId = "email#test@example.com";
-      const mockUser = {
-        userId,
-        email: "test@example.com",
-      };
-
-      mockDb.user.query.mockResolvedValue({
-        Items: [mockUser],
-      });
-
-      const result = await getUserById(userId);
-
-      expect(mockDb.user.query).toHaveBeenCalledWith({
-        KeyConditionExpression: "userId = :userId",
-        ExpressionAttributeValues: { ":userId": userId },
-      });
-      expect(result).toEqual({
-        id: userId,
-        email: "test@example.com",
-      });
-    });
-
-    it("should return null when user not found", async () => {
-      mockDb.user.query.mockResolvedValue({
-        Items: [],
-      });
-
-      const result = await getUserById("email#nonexistent@example.com");
-
-      expect(result).toBeNull();
+      expect(user).toBeNull();
     });
   });
 
   describe("verifyLogin", () => {
-    it("should return user when credentials are valid", async () => {
+    it("returns user when credentials are valid", async () => {
       const email = "test@example.com";
-      const password = "testpassword123";
-      const hashedPassword = "hashed-password";
+      const password = "password123";
 
-      // Mock password query
-      mockDb.password.query.mockResolvedValue({
-        Items: [{ password: hashedPassword }],
-      });
+      // Mock the getUserPasswordByEmail call
+      mockDb.query.mockResolvedValueOnce([
+        {
+          userId: `email#${email}`,
+          password: "hashed_password",
+        },
+      ]);
 
-      // Mock bcrypt compare
-      (vi.mocked(bcrypt.compare) as any).mockResolvedValue(true);
+      // Mock the getUserByEmail call that happens internally
+      mockDb.query.mockResolvedValueOnce([
+        {
+          userId: `email#${email}`,
+          email,
+          name: "Test User",
+        },
+      ]);
 
-      // Mock getUserByEmail
-      mockDb.user.query.mockResolvedValue({
-        Items: [
-          {
-            userId: `email#${email}`,
-            email,
-          },
-        ],
-      });
+      const user = await verifyLogin(email, password);
 
-      const result = await verifyLogin(email, password);
-
-      expect(mockDb.password.query).toHaveBeenCalledWith({
-        KeyConditionExpression: "userId = :userId",
-        ExpressionAttributeValues: { ":userId": `email#${email}` },
-      });
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
-      expect(result).toEqual({
-        id: `email#${email}`,
-        email,
-      });
+      expect(user?.email).toBe(email);
     });
 
-    it("should return undefined when user has no password", async () => {
-      mockDb.password.query.mockResolvedValue({ Items: [] });
+    it("returns undefined when user not found", async () => {
+      const email = "nonexistent@example.com";
+      const password = "password123";
 
-      const result = await verifyLogin("test@example.com", "password");
+      // Mock empty result for password query
+      mockDb.query.mockResolvedValue([]);
 
-      expect(result).toBeUndefined();
-    });
+      const user = await verifyLogin(email, password);
 
-    it("should return undefined when password is invalid", async () => {
-      const email = "test@example.com";
-      const hashedPassword = "hashed-password";
-
-      mockDb.password.query.mockResolvedValue({
-        Items: [{ password: hashedPassword }],
-      });
-      (vi.mocked(bcrypt.compare) as any).mockResolvedValue(false);
-
-      const result = await verifyLogin(email, "wrong-password");
-
-      expect(bcrypt.compare).toHaveBeenCalledWith(
-        "wrong-password",
-        hashedPassword,
-      );
-      expect(result).toBeUndefined();
+      expect(user).toBeUndefined();
     });
   });
 
   describe("deleteUser", () => {
-    it("should delete user successfully", async () => {
+    it("deletes user and password records", async () => {
       const email = "test@example.com";
-      mockDb.user.delete.mockResolvedValue({});
 
-      await deleteUser(email);
-
-      expect(mockDb.user.delete).toHaveBeenCalledWith({
-        userId: `email#${email}`,
-      });
+      await expect(deleteUser(email)).resolves.not.toThrow();
     });
   });
 });

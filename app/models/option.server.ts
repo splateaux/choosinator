@@ -1,6 +1,6 @@
-import arc from "@architect/functions";
 import { createId } from "@paralleldrive/cuid2";
 
+import { getAzureDatabase } from "~/lib/azure-db.server";
 import { PerformanceMonitor } from "~/utils/performance";
 
 export interface OptionItem {
@@ -22,18 +22,17 @@ async function checkOptionNameConflict(
   name: string,
   excludeOptionId?: string,
 ): Promise<void> {
-  const db = await arc.tables();
-  const result = await db.option.query({
-    KeyConditionExpression: "optionsListId = :optionsListId",
-    ExpressionAttributeValues: {
-      ":optionsListId": optionsListId,
-    },
-  });
+  const db = getAzureDatabase();
+  const result = await db.query<OptionItem>(
+    "option",
+    "SELECT * FROM c WHERE c.optionsListId = @optionsListId",
+    [{ name: "@optionsListId", value: optionsListId }],
+  );
 
-  const conflictingOption = (result.Items || []).find(
+  const conflictingOption = result.find(
     (item) =>
       item.name?.toLowerCase() === name.toLowerCase() &&
-      item.optionId !== excludeOptionId,
+      item.id !== excludeOptionId,
   );
 
   if (conflictingOption) {
@@ -49,28 +48,19 @@ export async function getOptionsForList(
   return PerformanceMonitor.measureAsync(
     `DB: getOptionsForList(${optionsListId})`,
     async () => {
-      const db = await arc.tables();
-      const result = await db.option.query({
-        KeyConditionExpression: "optionsListId = :optionsListId",
-        ExpressionAttributeValues: {
-          ":optionsListId": optionsListId,
-        },
-      });
-
-      interface DynamoOptionRow {
-        optionId: string;
-        optionsListId: string;
-        name?: string;
-        description?: string;
-      }
-      const items: OptionItem[] = (result.Items || []).map(
-        (row: DynamoOptionRow) => ({
-          id: row.optionId,
-          optionsListId: row.optionsListId,
-          name: row.name ?? "",
-          description: row.description ?? "",
-        }),
+      const db = getAzureDatabase();
+      const result = await db.query<OptionItem>(
+        "option",
+        "SELECT * FROM c WHERE c.optionsListId = @optionsListId",
+        [{ name: "@optionsListId", value: optionsListId }],
       );
+
+      const items: OptionItem[] = result.map((row) => ({
+        id: row.id,
+        optionsListId: row.optionsListId,
+        name: row.name ?? "",
+        description: row.description ?? "",
+      }));
 
       // Sort by name ascending as required
       items.sort((a, b) => a.name.localeCompare(b.name));
@@ -89,18 +79,18 @@ export async function createOption({
 >): Promise<OptionItem> {
   await checkOptionNameConflict(optionsListId, name);
 
-  const db = await arc.tables();
+  const db = getAzureDatabase();
   const optionId = createId();
 
-  const result = await db.option.put({
+  const result = await db.put("option", {
+    id: optionId,
     optionsListId,
-    optionId,
     name,
     description,
   });
 
   return {
-    id: result.optionId,
+    id: result.id,
     optionsListId: result.optionsListId,
     name: result.name,
     description: result.description ?? "",
@@ -118,10 +108,10 @@ export async function updateOption({
   name?: string;
   description?: string;
 }): Promise<OptionItem | null> {
-  const db = await arc.tables();
+  const db = getAzureDatabase();
 
   // Read current
-  const current = await db.option.get({ optionsListId, optionId: id });
+  const current = await db.get<OptionItem>("option", id, optionsListId);
   if (!current) return null;
 
   if (name) {
@@ -134,9 +124,9 @@ export async function updateOption({
     description: description ?? current.description ?? "",
   };
 
-  const result = await db.option.put(next);
+  const result = await db.put("option", next);
   return {
-    id: result.optionId,
+    id: result.id,
     optionsListId: result.optionsListId,
     name: result.name,
     description: result.description ?? "",
@@ -150,6 +140,6 @@ export async function deleteOption({
   optionsListId: string;
   id: string;
 }): Promise<void> {
-  const db = await arc.tables();
-  await db.option.delete({ optionsListId, optionId: id });
+  const db = getAzureDatabase();
+  await db.delete("option", id, optionsListId);
 }

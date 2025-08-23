@@ -1,13 +1,15 @@
-import arc from "@architect/functions";
+import { getAzureDatabase } from "~/lib/azure-db.server";
 
 export interface PresenceRecord {
+  id: string; // pollId#clientId
   pollId: string;
   clientId: string;
   displayName: string;
   lastSeenAt: number;
+  ttl: number;
 }
 
-const TTL_SECONDS = 45; // Dynamo TTL grace window in seconds
+const TTL_SECONDS = 45; // Cosmos DB TTL grace window in seconds
 
 function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
@@ -18,9 +20,12 @@ export async function upsertPresence(
   clientId: string,
   displayName: string,
 ): Promise<void> {
-  const db = await arc.tables();
+  const db = getAzureDatabase();
   const lastSeenAt = Date.now();
-  await db.pollPresence.put({
+  const id = `${pollId}#${clientId}`;
+
+  await db.put("pollPresence", {
+    id,
     pollId,
     clientId,
     displayName,
@@ -32,19 +37,16 @@ export async function upsertPresence(
 export async function listPresenceForPoll(
   pollId: string,
 ): Promise<Pick<PresenceRecord, "clientId" | "displayName">[]> {
-  const db = await arc.tables();
-  const result = await db.pollPresence.query({
-    KeyConditionExpression: "pollId = :pollId",
-    ExpressionAttributeValues: { ":pollId": pollId },
-  });
+  const db = getAzureDatabase();
+  const result = await db.query<PresenceRecord>(
+    "pollPresence",
+    "SELECT * FROM c WHERE c.pollId = @pollId",
+    [{ name: "@pollId", value: pollId }],
+  );
+
   const cutoff = Date.now() - 30_000; // 30s activity window
-  interface PresenceRow {
-    clientId?: string;
-    displayName?: string;
-    lastSeenAt?: number;
-  }
-  const rows: PresenceRow[] = (result.Items || []) as PresenceRow[];
-  return rows
+
+  return result
     .filter((r) => (r.lastSeenAt ?? 0) >= cutoff)
     .map((r) => ({
       clientId: r.clientId ?? "",

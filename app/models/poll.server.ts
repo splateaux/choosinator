@@ -1,5 +1,6 @@
-import arc from "@architect/functions";
 import { createId } from "@paralleldrive/cuid2";
+
+import { getAzureDatabase } from "~/lib/azure-db.server";
 
 import type { OptionsList } from "./optionsList.server";
 
@@ -16,12 +17,12 @@ export async function createPoll({
   name,
   createdByUserId,
 }: Pick<Poll, "optionsListId" | "name" | "createdByUserId">): Promise<Poll> {
-  const db = await arc.tables();
+  const db = getAzureDatabase();
   const nowIso = new Date().toISOString();
   const pollId = createId();
 
-  const result = await db.poll.put({
-    pollId,
+  const result = await db.put("poll", {
+    id: pollId,
     optionsListId,
     name,
     createdByUserId,
@@ -29,7 +30,7 @@ export async function createPoll({
   });
 
   return {
-    id: result.pollId,
+    id: result.id,
     optionsListId: result.optionsListId,
     name: result.name,
     createdByUserId: result.createdByUserId,
@@ -38,41 +39,21 @@ export async function createPoll({
 }
 
 export async function getPollById(pollId: Poll["id"]): Promise<Poll | null> {
-  const db = await arc.tables();
-  const result = await db.poll.get({ pollId });
+  const db = getAzureDatabase();
+  const result = await db.get<Poll>("poll", pollId);
   if (!result) return null;
-  return {
-    id: result.pollId,
-    optionsListId: result.optionsListId,
-    name: result.name,
-    createdByUserId: result.createdByUserId,
-    createdAt: result.createdAt,
-  };
+  return result;
 }
 
 export async function listPollsForOptionsList(
   optionsListId: OptionsList["id"],
 ): Promise<Poll[]> {
-  // There is no secondary index; we'll scan and filter in memory for simplicity at MVP scale
-  const db = await arc.tables();
-  const results = await db.poll.scan({});
+  const db = getAzureDatabase();
+  const results = await db.query<Poll>(
+    "poll",
+    "SELECT * FROM c WHERE c.optionsListId = @optionsListId ORDER BY c.createdAt",
+    [{ name: "@optionsListId", value: optionsListId }],
+  );
 
-  interface DynamoPollRow {
-    pollId: string;
-    optionsListId: string;
-    name: string;
-    createdByUserId: string;
-    createdAt: string;
-  }
-
-  const items: DynamoPollRow[] = (results.Items || []) as DynamoPollRow[];
-  const filtered = items.filter((row) => row.optionsListId === optionsListId);
-  filtered.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt));
-  return filtered.map((row) => ({
-    id: row.pollId,
-    optionsListId: row.optionsListId,
-    name: row.name,
-    createdByUserId: row.createdByUserId,
-    createdAt: row.createdAt,
-  }));
+  return results;
 }

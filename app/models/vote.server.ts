@@ -1,10 +1,9 @@
-import arc from "@architect/functions";
-
+import { getAzureDatabase } from "~/lib/azure-db.server";
 import { isLocal } from "~/utils/env";
 
 export interface VoteRecord {
-  pk: string; // POLL#<pollId>
-  sk: string; // VOTE#<optionId>#<userId>
+  id: string; // POLL#<pollId>#VOTE#<optionId>#<userId>
+  pollId: string;
   userId: string;
   optionId: string;
   tokens?: number; // number of tokens the user allocated to the option
@@ -31,31 +30,24 @@ export async function adjustVoteTokens({
   delta: number; // typically +1 or -1
   maxTokens?: number;
 }): Promise<{ newCount: number; remaining: number }> {
-  const db = await arc.tables();
-  const pk = `POLL#${pollId}`;
-  const sk = `VOTE#${optionId}#${userId}`;
+  const db = getAzureDatabase();
+  const voteId = `${pollId}#${optionId}#${userId}`;
 
   // Load all votes for this poll to compute current totals for this user
-  const all = await db.pollVote.query({
-    KeyConditionExpression: "pk = :pk",
-    ExpressionAttributeValues: { ":pk": pk },
-  });
-  interface Row {
-    sk?: string;
-    userId?: string;
-    optionId?: string;
-    tokens?: number;
-  }
-  const myRows: Row[] = (all.Items || []).filter(
-    (r: Row) => (r.userId ?? "") === userId,
+  const all = await db.query<VoteRecord>(
+    "pollVote",
+    "SELECT * FROM c WHERE c.pollId = @pollId",
+    [{ name: "@pollId", value: pollId }],
   );
+
+  const myRows = all.filter((r) => r.userId === userId);
   const currentTotalAllocated = myRows.reduce(
     (sum, r) => sum + (typeof r.tokens === "number" ? r.tokens : 0),
     0,
   );
 
   // Get the current record for this specific option
-  const existing = (await db.pollVote.get({ pk, sk })) as VoteRecord | null;
+  const existing = await db.get<VoteRecord>("pollVote", voteId, pollId);
   const currentOptionCount = existing?.tokens ?? 0;
 
   let desired = currentOptionCount + delta;
@@ -79,32 +71,21 @@ export async function adjustVoteTokens({
   }
 
   const now = new Date().toISOString();
-  await db.pollVote.put({
-    pk,
-    sk,
+  await db.put("pollVote", {
+    id: voteId,
+    pollId,
     userId,
     optionId,
     tokens: desired,
     updatedAt: now,
   });
 
-  // Locally, short-circuit streams by publishing the same event ourselves
+  // For Azure, we'll use the change feed to handle real-time updates
+  // The Azure Function will handle publishing events
   if (isLocal()) {
-    console.log("publishing vote-updated event");
-    await arc.events.publish({
-      name: "vote-updated",
-      payload: {
-        pk,
-        sk,
-        userId,
-        optionId,
-        updatedAt: now,
-        tokens: desired,
-        source: "writer",
-      },
-    });
-  } else {
-    console.log("not publishing vote-updated event");
+    console.log(
+      "vote updated locally - Azure Function will handle real-time updates",
+    );
   }
 
   // Recompute remaining with new desired value
@@ -130,20 +111,15 @@ export interface PollVotesSummary {
 export async function getVotesForPoll(
   pollId: string,
 ): Promise<PollVotesSummary> {
-  const db = await arc.tables();
-  const pk = `POLL#${pollId}`;
-  const result = await db.pollVote.query({
-    KeyConditionExpression: "pk = :pk",
-    ExpressionAttributeValues: { ":pk": pk },
-  });
+  const db = getAzureDatabase();
+  const result = await db.query<VoteRecord>(
+    "pollVote",
+    "SELECT * FROM c WHERE c.pollId = @pollId",
+    [{ name: "@pollId", value: pollId }],
+  );
 
-  interface Row {
-    optionId?: string;
-    userId?: string;
-    tokens?: number;
-  }
   const summary: PollVotesSummary = { byOption: {}, totalsByUser: {} };
-  for (const row of (result.Items || []) as Row[]) {
+  for (const row of result) {
     const optionId = row.optionId ?? "";
     const userId = row.userId ?? "";
     const tokens = typeof row.tokens === "number" ? row.tokens : 0;

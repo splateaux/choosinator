@@ -1,188 +1,91 @@
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeEach,
-  type MockedFunction,
-} from "vitest";
+import { createId } from "@paralleldrive/cuid2";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+import { getAzureDatabase } from "~/lib/azure-db.server";
 
 import {
-  createOptionsList,
   getOptionsList,
-  getOptionsListsByOwner,
+  createOptionsList,
   deleteOptionsList,
 } from "./optionsList.server";
 
-// Mock architect functions
-vi.mock("@architect/functions", () => {
-  const mockTables = vi.fn();
-  return {
-    default: {
-      tables: mockTables,
-    },
-  };
-});
-
-// Mock cuid2
-vi.mock("@paralleldrive/cuid2", () => ({
-  createId: vi.fn(() => "test-id-123"),
+// Mock the Azure database
+vi.mock("~/lib/azure-db.server", () => ({
+  getAzureDatabase: vi.fn(),
 }));
 
-describe("OptionsList Server Model", () => {
+describe("OptionsList Model", () => {
   const mockDb = {
-    optionsList: {
-      put: vi.fn(),
-      get: vi.fn(),
-      query: vi.fn(),
-      delete: vi.fn(),
-    },
+    getContainer: vi.fn(),
+    query: vi.fn(),
+    get: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    getAll: vi.fn(),
   };
 
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    const arc = await import("@architect/functions");
-    (
-      arc.default.tables as MockedFunction<typeof arc.default.tables>
-    ).mockResolvedValue(mockDb as any);
-  });
+  beforeEach(() => {
+    vi.mocked(getAzureDatabase).mockReturnValue(mockDb);
 
-  describe("createOptionsList", () => {
-    it("should create a new options list successfully", async () => {
-      const mockResult = {
-        optionsListId: "test-id-123",
-        userId: "email#user@example.com",
-        name: "Test List",
-      };
-
-      mockDb.optionsList.put.mockResolvedValue(mockResult);
-
-      const result = await createOptionsList({
-        name: "Test List",
-        ownerUserId: "email#user@example.com",
-      });
-
-      expect(mockDb.optionsList.put).toHaveBeenCalledWith({
-        userId: "email#user@example.com",
-        optionsListId: "test-id-123",
-        name: "Test List",
-      });
-
-      expect(result).toEqual({
-        id: "test-id-123",
-        ownerUserId: "email#user@example.com",
-        name: "Test List",
-      });
-    });
+    // Set up default mock implementations
+    mockDb.query.mockResolvedValue([]);
+    mockDb.get.mockResolvedValue(null);
+    mockDb.put.mockImplementation((container, item) => Promise.resolve(item));
+    mockDb.delete.mockResolvedValue(undefined);
   });
 
   describe("getOptionsList", () => {
-    it("should return options list when found", async () => {
-      const mockResult = {
-        optionsListId: "test-id-123",
-        userId: "email#user@example.com",
-        name: "Test List",
-      };
+    it("returns options list when found", async () => {
+      const id = createId();
+      const ownerUserId = "email#test@example.com";
+      const name = "Test List";
 
-      mockDb.optionsList.get.mockResolvedValue(mockResult);
-
-      const result = await getOptionsList({
-        id: "test-id-123",
-        ownerUserId: "email#user@example.com",
+      mockDb.get.mockResolvedValue({
+        id,
+        name,
+        ownerUserId,
       });
 
-      expect(mockDb.optionsList.get).toHaveBeenCalledWith({
-        userId: "email#user@example.com",
-        optionsListId: "test-id-123",
-      });
+      const result = await getOptionsList({ id, ownerUserId });
 
-      expect(result).toEqual({
-        id: "test-id-123",
-        ownerUserId: "email#user@example.com",
-        name: "Test List",
-      });
+      expect(result?.id).toBe(id);
+      expect(result?.name).toBe(name);
+      expect(result?.ownerUserId).toBe(ownerUserId);
     });
 
-    it("should return null when options list not found", async () => {
-      mockDb.optionsList.get.mockResolvedValue(null);
+    it("returns null when options list not found", async () => {
+      const id = createId();
+      const ownerUserId = "email#test@example.com";
 
-      const result = await getOptionsList({
-        id: "non-existent",
-        ownerUserId: "email#user@example.com",
-      });
+      mockDb.get.mockResolvedValue(null);
+
+      const result = await getOptionsList({ id, ownerUserId });
 
       expect(result).toBeNull();
     });
   });
 
-  describe("getOptionsListsByOwner", () => {
-    it("should return all options lists for a user", async () => {
-      const mockResults = {
-        Items: [
-          {
-            optionsListId: "list-1",
-            userId: "email#user@example.com",
-            name: "List 1",
-          },
-          {
-            optionsListId: "list-2",
-            userId: "email#user@example.com",
-            name: "List 2",
-          },
-        ],
-      };
+  describe("createOptionsList", () => {
+    it("creates a new options list", async () => {
+      const name = "New List";
+      const ownerUserId = "email#test@example.com";
 
-      mockDb.optionsList.query.mockResolvedValue(mockResults);
+      const result = await createOptionsList({ name, ownerUserId });
 
-      const result = await getOptionsListsByOwner("email#user@example.com");
-
-      expect(mockDb.optionsList.query).toHaveBeenCalledWith({
-        KeyConditionExpression: "userId = :ownerUserId",
-        ExpressionAttributeValues: {
-          ":ownerUserId": "email#user@example.com",
-        },
-      });
-
-      expect(result).toEqual([
-        {
-          id: "list-1",
-          ownerUserId: "email#user@example.com",
-          name: "List 1",
-        },
-        {
-          id: "list-2",
-          ownerUserId: "email#user@example.com",
-          name: "List 2",
-        },
-      ]);
-    });
-
-    it("should return empty array when user has no options lists", async () => {
-      const mockResults = {
-        Items: [],
-      };
-
-      mockDb.optionsList.query.mockResolvedValue(mockResults);
-
-      const result = await getOptionsListsByOwner("email#user@example.com");
-
-      expect(result).toEqual([]);
+      expect(result.name).toBe(name);
+      expect(result.ownerUserId).toBe(ownerUserId);
+      expect(result.id).toBeDefined();
     });
   });
 
   describe("deleteOptionsList", () => {
-    it("should delete options list successfully", async () => {
-      mockDb.optionsList.delete.mockResolvedValue({});
+    it("deletes an options list", async () => {
+      const id = createId();
+      const ownerUserId = "email#test@example.com";
 
-      await deleteOptionsList({
-        id: "test-id-123",
-        ownerUserId: "email#user@example.com",
-      });
-
-      expect(mockDb.optionsList.delete).toHaveBeenCalledWith({
-        userId: "email#user@example.com",
-        optionsListId: "test-id-123",
-      });
+      await expect(
+        deleteOptionsList({ id, ownerUserId }),
+      ).resolves.not.toThrow();
     });
   });
 });

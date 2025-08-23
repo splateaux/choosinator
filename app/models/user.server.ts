@@ -1,23 +1,26 @@
-import arc from "@architect/functions";
 import bcrypt from "bcryptjs";
 import invariant from "tiny-invariant";
+
+import { getAzureDatabase } from "~/lib/azure-db.server";
 
 export interface User {
   id: `email#${string}`;
   email: string;
 }
+
 export interface Password {
   password: string;
 }
 
 export async function getUserById(id: User["id"]): Promise<User | null> {
-  const db = await arc.tables();
-  const result = await db.user.query({
-    KeyConditionExpression: "userId = :userId",
-    ExpressionAttributeValues: { ":userId": id },
-  });
+  const db = getAzureDatabase();
+  const result = await db.query<User>(
+    "user",
+    "SELECT * FROM c WHERE c.userId = @userId",
+    [{ name: "@userId", value: id }],
+  );
 
-  const [record] = result.Items;
+  const [record] = result;
   if (record) return { id: record.userId, email: record.email };
   return null;
 }
@@ -27,13 +30,14 @@ export async function getUserByEmail(email: User["email"]) {
 }
 
 async function getUserPasswordByEmail(email: User["email"]) {
-  const db = await arc.tables();
-  const result = await db.password.query({
-    KeyConditionExpression: "userId = :userId",
-    ExpressionAttributeValues: { ":userId": `email#${email}` },
-  });
+  const db = getAzureDatabase();
+  const result = await db.query<{ userId: string; password: string }>(
+    "password",
+    "SELECT * FROM c WHERE c.userId = @userId",
+    [{ name: "@userId", value: `email#${email}` }],
+  );
 
-  const [record] = result.Items;
+  const [record] = result;
 
   if (record) return { hash: record.password };
   return null;
@@ -44,13 +48,14 @@ export async function createUser(
   password: Password["password"],
 ) {
   const hashedPassword = await bcrypt.hash(password, 10);
-  const db = await arc.tables();
-  await db.password.put({
+  const db = getAzureDatabase();
+
+  await db.put("password", {
     userId: `email#${email}`,
     password: hashedPassword,
   });
 
-  await db.user.put({
+  await db.put("user", {
     userId: `email#${email}`,
     email,
   });
@@ -62,9 +67,9 @@ export async function createUser(
 }
 
 export async function deleteUser(email: User["email"]) {
-  const db = await arc.tables();
-  await db.password.delete({ userId: `email#${email}` });
-  await db.user.delete({ userId: `email#${email}` });
+  const db = getAzureDatabase();
+  await db.delete("password", `email#${email}`);
+  await db.delete("user", `email#${email}`);
 }
 
 export async function verifyLogin(
