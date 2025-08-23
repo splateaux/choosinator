@@ -1,0 +1,15 @@
+name: choosinator
+metadata:
+  template: choosinator
+services:
+  web:
+    project: app
+    language: node
+    host: appservice
+  api:
+    project: functions
+    language: dotnet
+    host: function
+infrastructure:
+  provider: bicep
+  path: infra/azure
