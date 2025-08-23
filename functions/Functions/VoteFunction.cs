@@ -1,8 +1,10 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Azure.WebJobs.Extensions.CosmosDB;
+using Microsoft.Azure.Functions.Worker.Extensions.CosmosDB;
+using Microsoft.Azure.Cosmos;
 using System.Net;
 using System.Text.Json;
+using ChoosinatorFunctions.Models;
 
 namespace ChoosinatorFunctions.Functions
 {
@@ -11,69 +13,69 @@ namespace ChoosinatorFunctions.Functions
         [Function("Vote")]
         public static async Task<HttpResponseData> Vote(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "vote")] HttpRequestData req,
-            [CosmosDB("choosinator", "pollVote", ConnectionStringSetting = "CosmosDBConnection")] IAsyncCollector<PollVote> voteCollector)
+            [CosmosDBInput("choosinator", "pollVote", Connection = "COSMOS_CONNECTION_STRING")] CosmosClient cosmosClient)
         {
             try
             {
-                var requestBody = JsonSerializer.Deserialize<VoteRequest>(req.Body);
-                
-                // Validate request
-                if (string.IsNullOrEmpty(requestBody.UserId) || 
-                    string.IsNullOrEmpty(requestBody.PollId) || 
-                    requestBody.Votes == null || 
-                    !requestBody.Votes.Any())
+                // Read request body
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var request = JsonSerializer.Deserialize<VoteRequest>(requestBody);
+
+                if (request?.PollId == null || request?.UserId == null || request?.OptionId == null)
                 {
-                    var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
-                    await badRequest.WriteAsJsonAsync(new { error = "Invalid request data" });
-                    return badRequest;
+                    var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResponse.WriteStringAsync("Missing required fields");
+                    return badResponse;
                 }
 
-                // Create vote document
-                var vote = new PollVote
+                var container = cosmosClient.GetContainer("choosinator", "pollVote");
+
+                // Get current user votes for this poll
+                var query = container.GetItemQueryIterator<VoteRecord>(
+                    new QueryDefinition("SELECT * FROM c WHERE c.pollId = @pollId AND c.userId = @userId")
+                        .WithParameter("@pollId", request.PollId)
+                        .WithParameter("@userId", request.UserId)
+                );
+
+                var totalTokens = 0;
+                while (query.HasMoreResults)
                 {
-                    Id = $"{requestBody.PollId}:{requestBody.UserId}",
-                    PollId = requestBody.PollId,
-                    UserId = requestBody.UserId,
-                    Votes = requestBody.Votes,
-                    Timestamp = DateTime.UtcNow
+                    var response = await query.ReadNextAsync();
+                    totalTokens += response.Sum(v => v.Tokens);
+                }
+
+                // Check token limit (≤10 per user)
+                if (totalTokens + request.Tokens > 10)
+                {
+                    var limitResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await limitResponse.WriteStringAsync("Token limit exceeded (max 10 per user)");
+                    return limitResponse;
+                }
+
+                // Create or update vote record
+                var voteRecord = new VoteRecord
+                {
+                    Id = $"{request.PollId}:{request.UserId}:{request.OptionId}",
+                    PollId = request.PollId,
+                    UserId = request.UserId,
+                    OptionId = request.OptionId,
+                    Tokens = request.Tokens,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
-                // Save to Cosmos DB
-                await voteCollector.AddAsync(vote);
+                await container.UpsertItemAsync(voteRecord);
 
-                var response = req.CreateResponse(HttpStatusCode.OK);
-                await response.WriteAsJsonAsync(new { success = true, voteId = vote.Id });
-                return response;
+                var successResponse = req.CreateResponse(HttpStatusCode.OK);
+                await successResponse.WriteAsJsonAsync(new { success = true, message = "Vote recorded successfully" });
+                return successResponse;
             }
             catch (Exception ex)
             {
                 var errorResponse = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await errorResponse.WriteAsJsonAsync(new { error = ex.Message });
+                await errorResponse.WriteStringAsync($"Error: {ex.Message}");
                 return errorResponse;
             }
         }
-    }
-
-    public class VoteRequest
-    {
-        public string UserId { get; set; }
-        public string PollId { get; set; }
-        public List<VoteOption> Votes { get; set; }
-    }
-
-    public class VoteOption
-    {
-        public string OptionId { get; set; }
-        public int Tokens { get; set; }
-    }
-
-    public class PollVote
-    {
-        public string Id { get; set; }
-        public string PollId { get; set; }
-        public string UserId { get; set; }
-        public List<VoteOption> Votes { get; set; }
-        public DateTime Timestamp { get; set; }
     }
 }
 
