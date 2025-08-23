@@ -10,13 +10,10 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 
+import { getApiEndpoint } from "~/config/azure.client";
 import { getOptionsForList } from "~/models/option.server";
 import { getPollById } from "~/models/poll.server";
-import {
-  adjustVoteTokens,
-  getVotesForPoll,
-  MAX_TOKENS_PER_USER,
-} from "~/models/vote.server";
+import { getVotesForPoll, MAX_TOKENS_PER_USER } from "~/models/vote.server";
 import { useTheme } from "~/root";
 import {
   getGuestName,
@@ -76,8 +73,33 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     invariant(pollId, "pollId missing");
     invariant(optionId, "optionId missing");
     invariant(!Number.isNaN(delta), "delta missing");
-    const result = await adjustVoteTokens({ pollId, optionId, userId, delta });
-    return json({ ok: true, ...result });
+
+    // Use Azure Functions
+    try {
+      const response = await fetch(getApiEndpoint("/vote"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pollId,
+          userId,
+          optionId,
+          tokens: delta,
+        }),
+      });
+
+      if (response.ok) {
+        return json({ ok: true });
+      } else {
+        const errorText = await response.text();
+        return json({ error: `Vote failed: ${errorText}` }, { status: 400 });
+      }
+    } catch (error) {
+      console.error("Azure vote API error:", error);
+      return json(
+        { error: "Vote failed - service unavailable" },
+        { status: 503 },
+      );
+    }
   }
 
   return json({ error: "Unknown action" }, { status: 400 });
@@ -120,125 +142,173 @@ export default function PollPublicPage() {
     participants: { clientId: string; displayName: string }[];
   }>();
 
-  const isSubmittingRef = useRef(false);
-  const lastSubmitRef = useRef(0);
-
   // Local vote buffer state
   const [localVoteBuffer, setLocalVoteBuffer] = useState<VoteBuffer>({});
   const debounceTimersRef = useRef<TimerMap>({});
 
-  // Heartbeat to announce presence and poll participants periodically
+  // Azure presence tracking
   useEffect(() => {
     const pollId = data.poll.id;
-    // Initial announce + initial list load
-    isSubmittingRef.current = true;
-    presenceFetcher.submit(new FormData(), {
-      method: "post",
-      action: `/polls/${pollId}/presence`,
-    });
 
-    const heartbeat = setInterval(() => {
-      const now = Date.now();
-      if (isSubmittingRef.current) return;
-      if (now - lastSubmitRef.current < 9000) return; // throttle
-      isSubmittingRef.current = true;
-      presenceFetcher.submit(new FormData(), {
-        method: "post",
-        action: `/polls/${pollId}/presence`,
-      });
-    }, 10_000);
-
-    return () => {
-      clearInterval(heartbeat);
-    };
-    // We intentionally exclude `presenceFetcher` to avoid recreating the interval
-    // whenever the fetcher state updates, which would cause rapid resubmits.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.poll.id]);
-
-  // Track fetcher completion to update submission flags
-  useEffect(() => {
-    if (presenceFetcher.state === "idle") {
-      isSubmittingRef.current = false;
-      lastSubmitRef.current = Date.now();
-    }
-  }, [presenceFetcher.state]);
-
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    const base =
-      data.ENV?.WS_URL ??
-      (window.location.protocol === "https:" ? "wss:" : "ws:") +
-        `//${window.location.host}/testing`; // local fallback
-
-    const url = `${base}?pollId=${data.poll.id}&userId=${encodeURIComponent(data.voterId)}`;
-
-    console.log("🔌 [WS-CLIENT] Connecting to:", url);
-
-    const ws = new WebSocket(url);
-
-    ws.onopen = () => console.log("🔌 [WS-CLIENT] WS open", url);
-
-    ws.onmessage = (event) => {
-      console.log("🔌 [WS-CLIENT] WebSocket message received: ", event.data);
-      let msg: {
-        type?: string;
-        pk?: string;
-        pollId?: string;
-        optionId?: string;
-        updatedAt?: string;
-        userId?: string;
-      };
+    const updatePresence = async () => {
       try {
-        msg = JSON.parse(String(event.data));
-      } catch (error) {
-        console.warn("🔌 [WS-CLIENT] non-JSON message", event.data, error);
-        return;
-      }
+        const formData = new FormData();
+        formData.append("pollId", pollId);
+        formData.append("clientId", data.voterId);
+        formData.append(
+          "displayName",
+          data.guestName || data.userId || "Guest",
+        );
 
-      if (msg?.type !== "vote-updated") {
-        console.warn("🔌 [WS-CLIENT] non-vote-updated message", msg);
-        return;
-      }
-
-      const msgPollId =
-        msg.pollId ??
-        (typeof msg.pk === "string"
-          ? msg.pk.replace(/^POLL#|^poll#/, "")
-          : undefined);
-      if (msgPollId !== data.poll.id) {
-        console.warn("🔌 [WS-CLIENT] message for another poll", msg);
-        return;
-      }
-
-      // Reconcile local buffer when we receive server updates
-      if (msg.userId === data.voterId && msg.optionId) {
-        // Clear local buffer for this option since server has confirmed the change
-        setLocalVoteBuffer((prev) => {
-          const newBuffer = { ...prev };
-          delete newBuffer[msg.optionId!];
-          return newBuffer;
+        const response = await fetch(getApiEndpoint("/presence"), {
+          method: "POST",
+          body: formData,
         });
-        // Clear any pending timer
-        if (debounceTimersRef.current[msg.optionId!]) {
-          clearTimeout(debounceTimersRef.current[msg.optionId!]);
-          delete debounceTimersRef.current[msg.optionId!];
+
+        if (response.ok) {
+          // Update presence fetcher data to show current user
+          presenceFetcher.data = {
+            participants: [
+              ...(presenceFetcher.data?.participants || []).filter(
+                (p) => p.clientId !== data.voterId,
+              ),
+              {
+                clientId: data.voterId,
+                displayName: data.guestName || data.userId || "Guest",
+              },
+            ],
+          };
         }
+      } catch (error) {
+        console.error("Failed to update Azure presence:", error);
       }
-
-      revalidateRef.current();
     };
 
-    ws.onerror = (error) => {
-      console.error("🔌 [WS-CLIENT] WS error", error);
+    // Initial presence update
+    updatePresence();
+
+    // Heartbeat every 30 seconds
+    const heartbeat = setInterval(updatePresence, 30000);
+
+    return () => clearInterval(heartbeat);
+  }, [
+    data.poll.id,
+    data.voterId,
+    data.guestName,
+    data.userId,
+    presenceFetcher,
+  ]);
+
+  // Azure Web PubSub connection for real-time updates
+  useEffect(() => {
+    const connectToAzurePubSub = async () => {
+      try {
+        // Get connection info from Azure Function
+        const response = await fetch(getApiEndpoint("/negotiate"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pollId: data.poll.id,
+            userId: data.voterId,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error(
+            "🔌 [AZURE-WS] Failed to get connection info:",
+            response.status,
+          );
+          return;
+        }
+
+        const connectionInfo = await response.json();
+        console.log("🔌 [AZURE-WS] Got connection info:", connectionInfo);
+
+        // Connect to Azure Web PubSub
+        const ws = new WebSocket(connectionInfo.url);
+
+        ws.onopen = () => {
+          console.log("🔌 [AZURE-WS] Connected to Azure Web PubSub");
+          // Join the poll group
+          ws.send(
+            JSON.stringify({
+              type: "joinGroup",
+              group: `poll:${data.poll.id}`,
+            }),
+          );
+        };
+
+        ws.onmessage = (event) => {
+          console.log("🔌 [AZURE-WS] Web PubSub message received:", event.data);
+          let msg: {
+            target?: string;
+            arguments?: {
+              pollId?: string;
+              changes?: {
+                optionId?: string;
+                userId?: string;
+                tokens?: number;
+                updatedAt?: string;
+              }[];
+            }[];
+          };
+
+          try {
+            msg = JSON.parse(String(event.data));
+          } catch (error) {
+            console.warn("🔌 [AZURE-WS] non-JSON message", event.data, error);
+            return;
+          }
+
+          if (msg?.target === "voteUpdated") {
+            // Handle vote updates from Azure
+            const { pollId, changes } = msg.arguments?.[0] || {};
+            if (pollId === data.poll.id && changes) {
+              // Reconcile local buffer when we receive server updates
+              changes.forEach((change) => {
+                if (change.userId === data.voterId && change.optionId) {
+                  // Clear local buffer for this option since server has confirmed the change
+                  setLocalVoteBuffer((prev) => {
+                    const newBuffer = { ...prev };
+                    delete newBuffer[change.optionId!];
+                    return newBuffer;
+                  });
+                  // Clear any pending timer
+                  if (debounceTimersRef.current[change.optionId!]) {
+                    clearTimeout(debounceTimersRef.current[change.optionId!]);
+                    delete debounceTimersRef.current[change.optionId!];
+                  }
+                }
+              });
+
+              revalidateRef.current();
+            }
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("🔌 [AZURE-WS] Web PubSub error", error);
+        };
+
+        ws.onclose = (event) => {
+          console.log(
+            "🔌 [AZURE-WS] Web PubSub closed",
+            event.code,
+            event.reason,
+          );
+        };
+
+        return () => ws.close();
+      } catch (error) {
+        console.error(
+          "🔌 [AZURE-WS] Failed to connect to Azure Web PubSub:",
+          error,
+        );
+      }
     };
 
-    ws.onclose = (event) => {
-      console.log("🔌 [WS-CLIENT] WS closed", event.code, event.reason);
-    };
-
-    return () => ws.close();
-  }, [data.poll.id, data.voterId, data.ENV?.WS_URL]);
+    connectToAzurePubSub();
+  }, [data.poll.id, data.voterId]);
 
   // Vote buffering utilities
   const submitBufferedVotes = useCallback(
