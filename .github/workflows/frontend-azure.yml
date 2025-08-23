@@ -1,0 +1,31 @@
+name: Frontend (Azure)
+on:
+  push:
+    branches: [azure-migration]
+    paths: ["app/**", "remix.config.*", "package*.json"]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment: azure-dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEB_APP_NAME }}
+          package: ./build

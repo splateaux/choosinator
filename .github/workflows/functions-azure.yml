@@ -1,0 +1,35 @@
+name: Azure Functions
+on:
+  push:
+    branches: [azure-migration]
+    paths: ["functions/**"]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment: azure-dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build Functions
+        run: |
+          cd functions/ChoosinatorFunctions
+          dotnet build -c Release
+          dotnet test -c Release --no-build
+
+      - name: Publish Functions
+        run: |
+          cd functions/ChoosinatorFunctions
+          dotnet publish -c Release -o ./publish
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.AZURE_FUNCTION_APP_NAME }}
+          package: ./functions/ChoosinatorFunctions/publish
