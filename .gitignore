@@ -13,3 +13,52 @@ sam.yaml
 # Playwright test artifacts
 playwright-report/
 test-results/
+
+# .NET build artifacts
+*.csproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio files
+.vs/
+*.tmp
+*.temp
+
+# NuGet packages
+*.nupkg
+**/packages/*
+!**/packages/build/
+
+# .NET SDK and CLI artifacts
+.dotnet/
+**/.dotnet/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Docker
+.dockerignore
+
+# Temporary files
+create-containers.sh

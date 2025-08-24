@@ -5,21 +5,20 @@
   "type": "module",
   "scripts": {
     "build": "remix build",
-    "dev": "npm run dev:azure",
+    "dev": "concurrently \"npm run functions\" \"npm run frontend\"",
     "format": "prettier --write .",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "test": "vitest",
     "test:playwright": "playwright test",
     "test:playwright:headed": "playwright test --headed",
     "test:playwright:debug": "playwright test --debug",
-    "test:e2e": "start-server-and-test 'npm run dev:azure' http://localhost:3000 'playwright test'",
-    "test:e2e:debug": "start-server-and-test 'npm run dev:azure' http://localhost:3000 'playwright test --headed --ui'",
+    "test:e2e": "start-server-and-test 'npm run frontend' http://localhost:3000 'playwright test'",
+    "test:e2e:debug": "start-server-and-test 'npm run frontend' http://localhost:3000 'playwright test --headed --ui'",
     "validate": "run-p 'test -- --run' lint typecheck",
     "prepare": "husky",
     "typecheck": "tsc",
-    "azure:functions": "cd functions && func start --port 7071 --cors *",
-    "azure:dev": "concurrently \"npm run azure:functions\" \"npm run dev:azure\"",
-    "dev:azure": "cross-env PORT=3000 API_BASE_URL=http://localhost:7071 remix dev"
+    "functions": "cd functions && func start --port 7071 --cors *",
+    "frontend": "cross-env PORT=3000 API_BASE_URL=http://localhost:7071 remix dev"
   },
   "dependencies": {
     "@azure/cosmos": "^4.5.0",

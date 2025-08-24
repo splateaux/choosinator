@@ -4,31 +4,57 @@ services:
     image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
     container_name: choosinator-cosmos-emulator
     ports:
-      - "8081:8081" # HTTPS endpoint
+      - "8081:8081" # HTTPS gateway
+      - "10250:10250" # required
       - "10251:10251" # Internal communication
       - "10252:10252" # Internal communication
       - "10253:10253" # Internal communication
       - "10254:10254" # Internal communication
+      - "10255:10255" # required
     environment:
-      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=5
-      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1
+      - ACCEPT_EULA=Y
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=3
       - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
       - AZURE_COSMOS_EMULATOR_DATA_PERSISTENCE_PATH=/data
+      - AZURE_COSMOS_EMULATOR_ENABLE_SWAGGER=true
     volumes:
       - cosmos-data:/data
     healthcheck:
       test:
         [
           "CMD",
-          "curl",
-          "-k",
-          "-f",
-          "https://localhost:8081/_explorer/index.html",
+          "bash",
+          "-c",
+          "curl -kfsS https://127.0.0.1:8081/_explorer/index.html > /dev/null",
         ]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 5
-      start_period: 40s
+      retries: 30
+      start_period: 180s
+
+  # Cosmos DB Initialization (creates database and containers)
+  cosmos-init:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: choosinator-cosmos-init
+    depends_on:
+      cosmos-emulator:
+        condition: service_healthy
+    volumes:
+      - ./cosmos-init:/work
+    working_dir: /work
+    environment:
+      - DOTNET_CLI_HOME=/work/.dotnet
+      - HOME=/work
+    command: >
+      bash -lc '
+        set -e
+        apt-get update && apt-get install -y ca-certificates curl &&
+        curl -k https://cosmos-emulator:8081/_explorer/emulator.pem \
+          -o /usr/local/share/ca-certificates/cosmos-emulator.crt &&
+        update-ca-certificates &&
+        dotnet restore &&
+        dotnet run --project CosmosInit.csproj
+      '
 
   # Azure Storage Emulator (for Functions runtime)
   azurite:
@@ -55,9 +81,44 @@ services:
       retries: 5
       start_period: 10s
 
+  # Azure SignalR Local Emulator (for real-time messaging)
+  signalr-emulator:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: choosinator-signalr-emulator
+    working_dir: /work
+    volumes:
+      - signalr-emulator-data:/work # persist settings.json & logs
+    environment:
+      - DOTNET_CLI_TELEMETRY_OPTOUT=1
+      - NUGET_XMLDOC_MODE=skip
+    command: >
+      bash -lc "
+        dotnet tool install -g Microsoft.Azure.SignalR.Emulator ||
+        dotnet tool update -g Microsoft.Azure.SignalR.Emulator;
+        export PATH=$$PATH:/root/.dotnet/tools;
+        test -f settings.json || asrs-emulator upstream init;
+        asrs-emulator start -p 8080
+      "
+    ports:
+      - "8080:8080"
+    healthcheck:
+      # TCP-level check: emulator responds on 8080 when running
+      test:
+        [
+          "CMD",
+          "bash",
+          "-lc",
+          "exec 3<>/dev/tcp/127.0.0.1/8080 && exit 0 || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   cosmos-data:
   azurite-data:
+  signalr-emulator-data:
 
 networks:
   default:
