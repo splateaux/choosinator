@@ -13,19 +13,28 @@ class Program
     {
         Console.WriteLine("🚀 Initializing Cosmos DB Emulator...");
 
-        using var client = new CosmosClient(
-            CosmosEndpoint,
-            CosmosKey,
-            new CosmosClientOptions
-            {
-                ConnectionMode = ConnectionMode.Gateway,           // Emulator supports Gateway
-                RequestTimeout = TimeSpan.FromSeconds(120),        // give it breathing room
-                HttpClientFactory = () => new HttpClient(new HttpClientHandler
-                {
-                    // Accept the emulator's self-signed certificate (local dev ONLY)
-                    ServerCertificateCustomValidationCallback = (_, __, ___, ____) => true
-                })
-            });
+        var conn = Environment.GetEnvironmentVariable("COSMOS_CONNECTION_STRING");
+        CosmosClient client;
+
+        var opts = new CosmosClientOptions {
+        ConnectionMode = ConnectionMode.Gateway,
+        RequestTimeout = TimeSpan.FromSeconds(120),
+        HttpClientFactory = () => new HttpClient(new HttpClientHandler {
+            ServerCertificateCustomValidationCallback = (_, __, ___, ____) => true
+        })
+        };
+
+        if (!string.IsNullOrWhiteSpace(conn))
+        {
+            client = new CosmosClient(conn, opts);
+        }
+        else
+        {
+            var endpoint = Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")?.Trim() ?? "https://localhost:8081";
+            var key = Environment.GetEnvironmentVariable("COSMOS_KEY")?.Trim()
+                    ?? "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+            client = new CosmosClient(endpoint, key, opts);
+        }
 
         // simple retry helper
         static async Task<T> RetryAsync<T>(Func<Task<T>> action, string op, int maxRetries = 8, int initialDelayMs = 500)
