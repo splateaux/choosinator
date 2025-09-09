@@ -30,7 +30,10 @@ export class AzureDatabase {
   async query<T>(
     containerName: string,
     query: string,
-    parameters: { name: string; value: unknown }[] = [],
+    parameters: {
+      name: string;
+      value: string | number | boolean | null;
+    }[] = [],
   ): Promise<T[]> {
     const container = await this.getContainer(containerName);
     const querySpec = {
@@ -52,10 +55,8 @@ export class AzureDatabase {
   ): Promise<T | null> {
     try {
       const container = await this.getContainer(containerName);
-      const { resource } = await container
-        .item(id, partitionKey || id)
-        .read<T>();
-      return resource || null;
+      const { resource } = await container.item(id, partitionKey || id).read();
+      return (resource as T) || null;
     } catch (error: unknown) {
       if (
         error &&
@@ -72,8 +73,8 @@ export class AzureDatabase {
   // Generic put/upsert method
   async put<T>(containerName: string, item: T): Promise<T> {
     const container = await this.getContainer(containerName);
-    const { resource } = await container.items.upsert<T>(item);
-    return resource!;
+    const { resource } = await container.items.upsert(item);
+    return resource as T;
   }
 
   // Generic delete method
@@ -89,8 +90,8 @@ export class AzureDatabase {
   // Get all items from a container
   async getAll<T>(containerName: string): Promise<T[]> {
     const container = await this.getContainer(containerName);
-    const { resources } = await container.items.readAll<T>().fetchAll();
-    return resources;
+    const { resources } = await container.items.readAll().fetchAll();
+    return resources as T[];
   }
 }
 

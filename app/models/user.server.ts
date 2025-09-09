@@ -21,7 +21,7 @@ export async function getUserById(id: User["id"]): Promise<User | null> {
   );
 
   const [record] = result;
-  if (record) return { id: record.userId, email: record.email };
+  if (record) return { id: record.id || record.userId, email: record.email };
   return null;
 }
 
