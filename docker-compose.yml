@@ -114,6 +114,23 @@ services:
       retries: 5
       start_period: 10s
 
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v3.0
+    container_name: choosinator-traefik
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8090:8080" # Traefik dashboard
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./certs:/certs:ro
+    networks:
+      - default
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   cosmos-data:
   azurite-data:

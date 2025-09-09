@@ -23,12 +23,20 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
+  console.log("🎯 Poll creation action called!");
   const userId = await requireUserId(request);
   invariant(params.optionsListId, "optionsListId not found");
 
   const formData = await request.formData();
   const nameRaw = (formData.get("name") as string) || "";
   const name = nameRaw.trim();
+
+  console.log("🎯 Form data:", {
+    nameRaw,
+    name,
+    userId,
+    optionsListId: params.optionsListId,
+  });
 
   // Default name to list name if empty
   const list = await getOptionsListForUser({
@@ -64,11 +72,24 @@ export default function NewPollFromList() {
 
   const hasEnoughOptions = data.options.length >= 2;
 
+  // Debug: Log when component mounts
+  console.log("📋 NewPollFromList component loaded", {
+    hasEnoughOptions,
+    optionsCount: data.options.length,
+    listName: data.list.name,
+  });
+
   return (
     <div>
       <h3 className="text-2xl font-bold">
         Create Poll from &quot;{data.list.name}&quot;
       </h3>
+      <button
+        onClick={() => console.log("🧪 Test button clicked - JS is working!")}
+        className="mb-2 px-2 py-1 bg-gray-200 text-xs"
+      >
+        Test JS
+      </button>
       <p className="text-sm text-gray-600 mb-4">
         This poll will include all {data.options.length} options from this list.
         {hasEnoughOptions ? null : (
@@ -103,6 +124,18 @@ export default function NewPollFromList() {
                 : "bg-gray-400 cursor-not-allowed"
             }`}
             disabled={!hasEnoughOptions}
+            onClick={(e) => {
+              console.log("🔘 Create Poll button clicked", {
+                hasEnoughOptions,
+                disabled: !hasEnoughOptions,
+              });
+              if (!hasEnoughOptions) {
+                e.preventDefault();
+                console.log(
+                  "🔘 Form submission prevented - not enough options",
+                );
+              }
+            }}
           >
             {hasEnoughOptions ? "Create Poll" : "Need More Options"}
           </button>

@@ -74,27 +74,37 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     invariant(optionId, "optionId missing");
     invariant(!Number.isNaN(delta), "delta missing");
 
+    console.log("🗳️ Vote request:", { pollId, optionId, delta, userId });
+
     // Use Azure Functions
     try {
+      const votePayload = {
+        pollId,
+        userId,
+        optionId,
+        tokens: delta,
+      };
+      console.log("🗳️ Sending to Azure Functions:", votePayload);
+
       const response = await fetch(getApiEndpoint("/vote"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pollId,
-          userId,
-          optionId,
-          tokens: delta,
-        }),
+        body: JSON.stringify(votePayload),
       });
 
+      console.log("🗳️ Azure Functions response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Vote successful:", result);
         return json({ ok: true });
       } else {
         const errorText = await response.text();
+        console.log("❌ Vote failed:", errorText);
         return json({ error: `Vote failed: ${errorText}` }, { status: 400 });
       }
     } catch (error) {
-      console.error("Azure vote API error:", error);
+      console.error("❌ Azure vote API error:", error);
       return json(
         { error: "Vote failed - service unavailable" },
         { status: 503 },

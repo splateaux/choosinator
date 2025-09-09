@@ -18,7 +18,7 @@
     "prepare": "husky",
     "typecheck": "tsc",
     "functions": "cd functions && func start --port 7071 --cors *",
-    "frontend": "cross-env PORT=3000 API_BASE_URL=http://localhost:7071 SESSION_SECRET=test-secret-for-development-only COSMOS_CONNECTION_STRING=\"AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==\" node server/index.mjs"
+    "frontend": "cross-env PORT=3000 API_BASE_URL=https://api.localhost SESSION_SECRET=test-secret-for-development-only COSMOS_CONNECTION_STRING=\"AccountEndpoint=https://cosmos.localhost/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==\" NODE_EXTRA_CA_CERTS=/home/splateaux/.local/share/mkcert/rootCA.pem node server/index.mjs"
   },
   "dependencies": {
     "@azure/cosmos": "^4.5.0",

@@ -1,0 +1,37 @@
+http:
+  routers:
+    ui-router:
+      rule: "Host(`ui.localhost`)"
+      service: ui-service
+      tls: {}
+
+    api-router:
+      rule: "Host(`api.localhost`)"
+      service: api-service
+      tls: {}
+
+    cosmos-router:
+      rule: "Host(`cosmos.localhost`)"
+      service: cosmos-service
+      tls: {}
+
+  services:
+    ui-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3000"
+
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:7071"
+
+    cosmos-service:
+      loadBalancer:
+        servers:
+          - url: "https://host.docker.internal:8081"
+
+tls:
+  certificates:
+    - certFile: /certs/localhost.pem
+      keyFile: /certs/localhost-key.pem

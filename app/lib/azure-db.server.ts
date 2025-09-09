@@ -38,7 +38,9 @@ export class AzureDatabase {
       parameters,
     };
 
-    const { resources } = await container.items.query<T>(querySpec).fetchAll();
+    const { resources } = await container.items
+      .query<T>(querySpec, { enableCrossPartitionQuery: true })
+      .fetchAll();
     return resources;
   }
 

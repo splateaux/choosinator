@@ -31,13 +31,12 @@ export class PerformanceMonitor {
     label: string,
     operation: () => Promise<T>,
   ): Promise<T> {
-    this.startTimer(label);
+    // Temporarily disable performance monitoring to debug database issues
     try {
       const result = await operation();
-      this.endTimer(label);
       return result;
     } catch (error) {
-      this.endTimer(label);
+      console.error(`Error in ${label}:`, error);
       throw error;
     }
   }

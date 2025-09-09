@@ -85,8 +85,11 @@ class Program
                 new ContainerProperties("pollVote", "/pollId"),
                 new ContainerProperties("leases",   "/id"),     // used by Change Feed Processor
                 new ContainerProperties("poll",     "/id"),
-                new ContainerProperties("user",     "/id"),
-                new ContainerProperties("optionsList", "/userId"),
+                new ContainerProperties("user",     "/userId"),
+                new ContainerProperties("password", "/userId"),  // for storing password hashes
+                new ContainerProperties("optionsList", "/ownerUserId"),  // for options lists owned by users
+                new ContainerProperties("optionsListSharing", "/optionsListId"),  // for sharing options lists
+                new ContainerProperties("option", "/optionsListId"),  // for individual options in lists
                 new ContainerProperties("pollPresence", "/id")
             };
 
