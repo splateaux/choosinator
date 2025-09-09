@@ -21,7 +21,15 @@ export async function getUserById(id: User["id"]): Promise<User | null> {
   );
 
   const [record] = result;
-  if (record) return { id: record.id || record.userId, email: record.email };
+  if (record) {
+    const userRecord = record as {
+      id?: string;
+      userId?: string;
+      email: string;
+    };
+    const userId = userRecord.userId || userRecord.id || "";
+    return { id: userId as `email#${string}`, email: userRecord.email };
+  }
   return null;
 }
 

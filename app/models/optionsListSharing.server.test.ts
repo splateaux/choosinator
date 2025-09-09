@@ -16,6 +16,9 @@ vi.mock("~/lib/azure-db.server", () => ({
 
 describe("OptionsListSharing Model", () => {
   const mockDb = {
+    client: {} as any,
+    database: {} as any,
+    containers: new Map(),
     getContainer: vi.fn(),
     query: vi.fn(),
     get: vi.fn(),
@@ -25,7 +28,7 @@ describe("OptionsListSharing Model", () => {
   };
 
   beforeEach(() => {
-    vi.mocked(getAzureDatabase).mockReturnValue(mockDb);
+    vi.mocked(getAzureDatabase).mockReturnValue(mockDb as any);
 
     // Set up default mock implementations
     mockDb.query.mockResolvedValue([]);

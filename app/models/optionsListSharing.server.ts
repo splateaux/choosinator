@@ -95,8 +95,8 @@ export async function getSharedOptionsListsForUser(
       return results.map((item) => ({
         id: createId(),
         optionsListId: item.optionsListId,
-        ownerUserId: item.ownerUserId,
-        sharedWithUserId: item.sharedWithUserId,
+        ownerUserId: item.ownerUserId as `email#${string}`,
+        sharedWithUserId: item.sharedWithUserId as `email#${string}`,
         permission: (item.permission as "view" | "edit") ?? "edit",
         createdAt: item.createdAt,
       }));
@@ -124,7 +124,7 @@ export async function getSharedUsersForOptionsList({
       const sharedUsers: User[] = [];
       for (const item of results) {
         const user = await import("./user.server").then((m) =>
-          m.getUserById(item.sharedWithUserId),
+          m.getUserById(item.sharedWithUserId as `email#${string}`),
         );
         if (user) {
           sharedUsers.push(user);
@@ -161,7 +161,7 @@ export async function getUserSharesForOptionsList({
       const shares: OptionsListUserShare[] = [];
       for (const item of results) {
         const user = await import("./user.server").then((m) =>
-          m.getUserById(item.sharedWithUserId),
+          m.getUserById(item.sharedWithUserId as `email#${string}`),
         );
         if (user) {
           shares.push({

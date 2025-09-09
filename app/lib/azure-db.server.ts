@@ -41,9 +41,7 @@ export class AzureDatabase {
       parameters,
     };
 
-    const { resources } = await container.items
-      .query<T>(querySpec, { enableCrossPartitionQuery: true })
-      .fetchAll();
+    const { resources } = await container.items.query<T>(querySpec).fetchAll();
     return resources;
   }
 
@@ -111,10 +109,10 @@ export function createMockAzureDatabase(): AzureDatabase {
     getContainer: async () => ({}) as Container,
     query: async () => [],
     get: async () => null,
-    put: async (item: unknown) => item,
+    put: async <T>(containerName: string, item: T): Promise<T> => item,
     delete: async () => {
       /* Mock implementation */
     },
     getAll: async () => [],
-  } as AzureDatabase;
+  } as unknown as AzureDatabase;
 }
