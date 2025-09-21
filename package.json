@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "remix build",
-    "dev": "concurrently \"npm run functions\" \"npm run frontend\"",
+    "dev": "npm run setup-dev && concurrently \"npm run functions\" \"npm run frontend\"",
+    "dev:quick": "concurrently \"npm run functions\" \"npm run frontend\"",
+    "setup-dev": "./scripts/setup-dev-environment.sh",
     "format": "prettier --write .",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "test": "vitest",
@@ -18,7 +20,7 @@
     "prepare": "husky",
     "typecheck": "tsc",
     "functions": "cd functions && func start --port 7071 --cors *",
-    "frontend": "cross-env PORT=3000 API_BASE_URL=https://api.localhost SESSION_SECRET=test-secret-for-development-only COSMOS_CONNECTION_STRING=\"AccountEndpoint=https://cosmos.localhost/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==\" NODE_EXTRA_CA_CERTS=/home/splateaux/.local/share/mkcert/rootCA.pem node server/index.mjs"
+    "frontend": "cross-env NODE_ENV=development PORT=3000 API_BASE_URL=https://api.localhost SESSION_SECRET=test-secret-for-development-only COSMOS_CONNECTION_STRING=\"AccountEndpoint=https://cosmos.localhost/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==\" NODE_EXTRA_CA_CERTS=/home/splateaux/.local/share/mkcert/rootCA.pem node server/index.mjs"
   },
   "dependencies": {
     "@azure/cosmos": "^4.5.0",

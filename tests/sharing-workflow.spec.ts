@@ -67,6 +67,12 @@ test.describe("Sharing Workflow", () => {
     // Successfully share with second user
     await page.getByLabel("Share with (email address)").fill(sharedUserEmail);
     await page.getByRole("button", { name: "Share" }).click();
+
+    // Wait for the form submission to complete
+    await page.waitForLoadState("networkidle");
+
+    // Check for success message using test-id for more reliable detection
+    await expect(page.getByTestId("sharing-success-message")).toBeVisible();
     await expect(
       page.getByText(`List shared with ${sharedUserEmail}`),
     ).toBeVisible();

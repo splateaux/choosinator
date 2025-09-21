@@ -98,7 +98,10 @@ export default function ShareList({
       ) : null}
 
       {sharingSuccess ? (
-        <div className="rounded-md bg-green-50 p-4">
+        <div
+          className="rounded-md bg-green-50 p-4"
+          data-testid="sharing-success-message"
+        >
           <div className="text-sm text-green-700">{sharingSuccess}</div>
         </div>
       ) : null}

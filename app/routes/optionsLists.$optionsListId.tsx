@@ -132,6 +132,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         });
         return json({ success: `List shared with ${email}`, action: "share" });
       } catch (error) {
+        console.error(`Failed to share list:`, error);
         return json(
           { error: "Failed to share list", action: "share" },
           { status: 500 },

@@ -15,7 +15,7 @@ export default defineConfig({
   // retries: 0, // Don't retry failed tests
   use: {
     actionTimeout: 0,
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3333",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [

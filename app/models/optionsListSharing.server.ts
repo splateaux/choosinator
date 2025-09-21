@@ -30,7 +30,7 @@ export async function shareOptionsList({
     `DB: shareOptionsList(${optionsListId}, ${sharedWithUserId})`,
     async () => {
       const db = getAzureDatabase();
-      const shareId = `${optionsListId}#${sharedWithUserId}`;
+      const shareId = `${optionsListId}|${sharedWithUserId.replace("#", "|").replace("@", "_at_")}`;
 
       const result = await db.put("optionsListSharing", {
         id: shareId,
@@ -64,7 +64,7 @@ export async function unshareOptionsList({
     `DB: unshareOptionsList(${optionsListId}, ${sharedWithUserId})`,
     async () => {
       const db = getAzureDatabase();
-      const shareId = `${optionsListId}#${sharedWithUserId}`;
+      const shareId = `${optionsListId}|${sharedWithUserId.replace("#", "|").replace("@", "_at_")}`;
 
       await db.delete("optionsListSharing", shareId, optionsListId);
     },
@@ -275,7 +275,7 @@ export async function updateSharePermission({
     `DB: updateSharePermission(${optionsListId}, ${sharedWithUserId}, ${permission})`,
     async () => {
       const db = getAzureDatabase();
-      const shareId = `${optionsListId}#${sharedWithUserId}`;
+      const shareId = `${optionsListId}|${sharedWithUserId.replace("#", "|").replace("@", "_at_")}`;
 
       await db.put("optionsListSharing", {
         id: shareId,
